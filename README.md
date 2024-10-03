@@ -13,11 +13,35 @@
 
 ## Features
 
-- **Personalized Recommendations**: Scholarships are recommended based on user profiles.
+- **Personalized Recommendations**: Scholarships are recommended based on user profiles and personal statement.
+  
+  <p align="center">
+  <img src="https://github.com/Sherryyy00/Scholarship-Spy/blob/main/images/recommendation.jpeg", alt=" Monthly Bar Chart " width="50%" height="50%">
+</p>
+
 - **Search Functionality**: Users can search for scholarships by country, field of study, and other criteria.
+  
+  <p align="center">
+  <img src="https://github.com/Sherryyy00/Scholarship-Spy/blob/main/images/Search.jpeg", alt=" Monthly Bar Chart " width="50%" height="50%">
+</p>
+
 - **Profile Management**: Users can update their profiles and view their scholarship history.
+  
+  <p align="center">
+  <img src="https://github.com/Sherryyy00/Scholarship-Spy/blob/main/images/Profile.jpeg", alt=" Monthly Bar Chart " width="50%" height="50%">
+</p>
+
 - **User Feedback**: Users can submit feedback on their experience.
+
+   <p align="center">
+  <img src="https://github.com/Sherryyy00/Scholarship-Spy/blob/main/images/feedback.jpeg", alt=" Monthly Bar Chart " width="50%" height="50%">
+</p>
+
 - **Admin Panel**: Admins can manage users and scholarship data.
+
+    <p align="center">
+  <img src="https://github.com/Sherryyy00/Scholarship-Spy/blob/main/images/admin.jpeg", alt=" Monthly Bar Chart " width="50%" height="50%">
+</p>
 
 ## Installation
 
