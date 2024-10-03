@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% if user.is_authenticated %}
+{% load static %}
+
+{% block custom_css_links %}
+<link href="{% static 'assets/css/profile_style.css' %}" rel="stylesheet">
+{% endblock custom_css_links %}
+
+{% block body %}
+<div class="main-content">
+
+  <!-- Header -->
+  <div class="header d-flex align-items-center" style="min-height: 180px;">
+    <span class="mask opacity-8"></span>
+  </div>
+  <!-- Page content -->
+  <div class="container-fluid mt-6">
+    <div class="row">
+      <div class="col-xl-3 order-xl-1 mb-5 mb-xl-0">
+        <div class="card card-profile shadow">
+          <div class="row justify-content-center">
+            <div class="col-lg-3 order-lg-2">
+              <div class="card-profile-image">
+                <a href="#">
+                  <img src="{{user.profile.photo.url}}" class="rounded-circle" width="100px" height="100px"
+                    style="object-fit: cover;">
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body pt-0 pt-md-4">
+
+            <div class="mt-5 pt-5">
+              <div class="text-center">
+                <h2 class="text-center pb-3">
+                  {{ request.user.username.capitalize }}
+                </h2>
+
+              </div>
+
+              <hr class="my-4">
+              <div class="row">
+                <a href="{% url 'userprofile' %}" class="col-md-12 py-2"><i class="bi bi-person-fill mx-2"></i>My
+                  Profile</a>
+                <a href="{% url 'my_recommendations' %}" class="col-md-12 py-2"><i class="bi bi-file-text mx-2"></i>My
+                  Recommmendations</a>
+                <a href="{% url 'feedback' %}" class="col-md-12 py-2"><i class="bi bi-file-text mx-2"></i>Feedback</a>
+                <a href="{% url 'my_history' %}" class="col-md-12 py-2"><i class="bi bi-file-text mx-2"></i>History</a>
+                <a href="{% url 'logout' %}" class="col-md-12 py-2"><i class="bi bi-arrow-up-right mx-2"></i>Logout</a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-9 order-xl-2">
+        <div class="card bg-secondary shadow">
+          <div class="card-header bg-white border-0">
+            <div class="row align-items-center">
+              <div class="col-8">
+                <h3 class="mb-0">My account</h3>
+              </div>
+              <div class="col-4 text-right">
+                <a href="{% url 'userprofileedit' %}" class="btn btn-sm"
+                  style="background-color: #31526B; color:white;">Edit
+                  Profile</a>
+                <a href="{% url 'password_reset_settings' %}" class="btn btn-sm"
+                  style="background-color: #31526B; color:white;">Settings</a>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Form -->
+
+            <h6 class="heading-small text-muted mb-4">User information</h6>
+            <div class="pl-lg-4">
+              <div class="row">
+                <div class="col-lg-6">
+                  <p class="form-control-label" for="id_First_Name">First name :
+                    <strong>{{user.first_name.capitalize}}</strong>
+                  </p>
+
+                </div>
+                <div class="col-lg-6">
+                  <p class="form-control-label" for="id_First_Name">Last name :
+                    <strong>{{user.last_name.capitalize}}</strong>
+                  </p>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <p class="form-control-label" for="id_First_Name">Email : <strong>{{user.email}}</strong>
+                  </p>
+                </div>
+                <div class="col-lg-6">
+                  <p class="form-control-label" for="id_First_Name">DOB : <strong>{{user.profile.dob}}</strong>
+                  </p>
+                </div>
+
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <p class="form-control-label" for="id_First_Name">Age : <strong>{{user.profile.age}}</strong>
+                  </p>
+                </div>
+                <div class="col-lg-6">
+                  <p class="form-control-label" for="id_First_Name">Nationality :
+                    <strong>{{user.profile.nationality}}</strong>
+                  </p>
+                </div>
+                <div class="col-lg-6">
+                  <p class="form-control-label" for="id_First_Name">Highest Qualification :
+                    <strong>{{user.profile.highest_qualification}}</strong>
+                  </p>
+                </div>
+                <div class="col-lg-6">
+                  <p class="form-control-label" for="id_First_Name">CGPA :
+                    <strong>{{user.profile.cgpa}}</strong>
+                  </p>
+                </div>
+
+              </div>
+
+            </div>
+
+            <hr class="my-3">
+            <a class="btn " href="{% url 'current_program'%}" target="_blank"
+              style="background-color: #31526B; color:white;">Add Current Program</a>
+            <hr class=" my-3">
+            {% if current_program_list %}
+            <h6 class="heading-small text-muted mb-4">Current Program</h6>
+            <div class="pl-lg-4">
+              <div class="row">
+                {% for program in current_program_list %}
+                <div class="col-lg-12">
+                  <ul>
+                    <li>{{program.name}}</li>
+                  </ul>
+                </div>
+                {% endfor %}
+
+              </div>
+            </div>
+            {% else %}
+            <div class="text-center my-2 small">No Current Program</div>
+            {% endif %}
+
+            <hr class="my-3">
+            <a class="btn btn-primary" href="{% url 'add_field_of_interest'%}"
+              style="background-color: #31526B; color:white;" target="_blank">Add Field of
+              Interest</a>
+
+            {% if field_of_interest_list %}
+            <hr class="my-3">
+            <h6 class="heading-small text-muted mb-4">Field Of Interest</h6>
+            <div class="pl-lg-4">
+              <div class="row">
+                {% for f in field_of_interest_list %}
+                <div class="col-lg-12">
+                  <ul>
+                    <li>{{f.name}}</li>
+                  </ul>
+                </div>
+                {% endfor %}
+
+
+              </div>
+            </div>
+            {% else %}
+            <div class="text-center my-2 small">No Field of Interest</div>
+            {% endif %}
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{{p_form}}
+
+
+<script>
+  function openPage() {
+    var x = document.getElementById("search").value;
+
+    if (x === "berlin" || x === "Berlin") {
+      window.open("/berlin-scholarship.html");
+    }
+    if (x === "canada" || x === "Canada") {
+      window.open("/canada-scholarship.html");
+    }
+    if (x === "phd" || x === "PhD" || x === "PHD") {
+      window.open("/phd-list.html");
+    }
+  }
+
+
+</script>
+{% endblock %}
+
+
+
+{% else %}
+<h1> You are not logged in </h1>
+
+
+{% endif %}

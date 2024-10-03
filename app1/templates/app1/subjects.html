@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% if user.is_authenticated %}
+{% load static %}
+
+{% block custom_css_links %}
+<link href="{% static 'assets/css/profile_style.css' %}" rel="stylesheet">
+{% endblock custom_css_links %}
+
+{% block body %}
+<style>
+  .single_subject {
+    font-size: 14px;
+    padding: 3px;
+    padding-left: 4px;
+
+    border-radius: 5px;
+    margin: 8px 0px;
+  }
+
+  .single_subject:hover {
+    background-color: rgba(108, 195, 242, 0.554);
+  }
+</style>
+
+<div class="main-content">
+
+  <!-- Header -->
+  <div class="header d-flex align-items-center" style="min-height: 180px;">
+    <span class="mask opacity-8"></span>
+  </div>
+  <!-- Page content -->
+  <div class="container-fluid mt-6">
+    <div class="d-flex justify-content-center">
+      <div class="col-xl-11 order-xl-2">
+        <div class="card bg-secondary shadow">
+          <div class="card-header bg-white border-0">
+            <div class="row align-items-center">
+              <div class="col-8">
+                <h2 class="mb-0">All Subjects</h2>
+              </div>
+
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Form -->
+
+            <div class="d-flex p-3">
+              {% for subject_lst in all_subjects %}
+              <div class="col-md-3 px-2 py-3">
+                {% for subject in subject_lst %}
+                <small class="single_subject">
+                  <a href="{% url 'category_subjects' subject.name %}" target="_blank">
+                    {{subject.name}}</a>
+                </small><br>
+                {% endfor %}
+              </div>
+
+              {% endfor %}
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{{p_form}}
+
+
+<script>
+  function openPage() {
+    var x = document.getElementById("search").value;
+
+    if (x === "berlin" || x === "Berlin") {
+      window.open("/berlin-scholarship.html");
+    }
+    if (x === "canada" || x === "Canada") {
+      window.open("/canada-scholarship.html");
+    }
+    if (x === "phd" || x === "PhD" || x === "PHD") {
+      window.open("/phd-list.html");
+    }
+  }
+
+
+</script>
+{% endblock %}
+
+
+
+{% else %}
+<h1> You are not logged in </h1>
+
+
+{% endif %}

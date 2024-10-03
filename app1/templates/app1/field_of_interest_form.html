@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% if user.is_authenticated %}
+{% load static %}
+
+{% block custom_css_links %}
+<link href="{% static 'assets/css/profile_style.css' %}" rel="stylesheet">
+{% endblock custom_css_links %}
+
+{% block body %}
+<div class="main-content">
+
+    <!-- Header -->
+    <div class="header d-flex align-items-center" style="min-height: 180px;">
+        <span class="mask opacity-8"></span>
+    </div>
+    <!-- Page content -->
+    <div class="container-fluid mt-6">
+        <div class="row">
+            <div class="col-xl-3 order-xl-1 mb-5 mb-xl-0">
+                <div class="card card-profile shadow">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-3 order-lg-2">
+                            <div class="card-profile-image">
+                                <a href="#">
+                                    <img src="{{user.profile.photo.url}}" class="rounded-circle" width="100px"
+                                        height="100px" style="object-fit: cover;"> </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body pt-0 pt-md-4">
+
+                        <div class="mt-5 pt-5">
+                            <div class="text-center">
+                                <h2 class="text-center pb-3">
+                                    {{ request.user.username.capitalize }}
+                                </h2>
+
+                            </div>
+
+                            <hr class="my-4">
+                            <div class="row">
+                                <a href="{% url 'userprofile' %}" class="col-md-12 py-2"><i
+                                        class="bi bi-person-fill mx-2"></i>My
+                                    Profile</a>
+                                <a href="{% url 'my_recommendations' %}" class="col-md-12 py-2"><i
+                                        class="bi bi-file-text mx-2"></i>My
+                                    Recommmendations</a>
+                                <a href="{% url 'feedback' %}" class="col-md-12 py-2"><i
+                                        class="bi bi-file-text mx-2"></i>Feedback</a>
+                                <a href="{% url 'my_history' %}" class="col-md-12 py-2"><i
+                                        class="bi bi-file-text mx-2"></i>History</a>
+                                <a href="{% url 'logout' %}" class="col-md-12 py-2"><i
+                                        class="bi bi-arrow-up-right mx-2"></i>Logout</a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-9 order-xl-2">
+                <div class="card bg-secondary shadow">
+                    <div class="card-header bg-white border-0">
+                        <div class="row align-items-center">
+                            <div class="col-8">
+                                <h3 class="mb-0">Add Field of Interest</h3>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Form -->
+                        {{p_form.non_field_errors}}
+                        <form action="" method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {% if messages %}
+                            {% for message in messages %}
+                            <div class="alert alert-{{message.tags}}"
+                                style="background-color: #5E72E4;padding: 15px 20px;margin-bottom: 20px;color: white;border-radius: 7px;">
+                                {{message}}
+                            </div>
+
+                            {% endfor %}
+                            {% endif %}
+                            {% block content %}{% endblock %}
+                            <div class="pl-lg-4">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="col-lg-6">
+                                            <div class="form-group focused">
+                                                <label class="form-control-label" for="fieldOfInterest">Field of
+                                                    Interest</label>
+                                                <input type="text" name="fieldOfInterest" maxlength="30"
+                                                    id="fieldOfInterest" class="form-control form-control-alternative"
+                                                    value="">
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-lg-6 mx-3">
+                                        <input type="submit" value="Save" class="btn btn-primary">
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script>
+    function openPage() {
+        var x = document.getElementById("search").value;
+
+        if (x === "berlin" || x === "Berlin") {
+            window.open("/berlin-scholarship.html");
+        }
+        if (x === "canada" || x === "Canada") {
+            window.open("/canada-scholarship.html");
+        }
+        if (x === "phd" || x === "PhD" || x === "PHD") {
+            window.open("/phd-list.html");
+        }
+    }
+
+
+</script>
+{% endblock %}
+
+
+
+{% else %}
+<h1> You are not logged in </h1>
+
+
+{% endif %}

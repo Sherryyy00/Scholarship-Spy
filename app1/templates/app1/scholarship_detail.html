@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% if user.is_authenticated %}
+{% load static %}
+
+{% block custom_css_links %}
+<link href="{% static 'assets/css/profile_style.css' %}" rel="stylesheet">
+{% endblock custom_css_links %}
+
+{% block body %}
+
+<style>
+    .card-horizontal {
+        display: flex;
+        flex: 1 1 auto;
+    }
+
+    @media (max-width:786px) {
+        .card-horizontal {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+        }
+    }
+</style>
+
+
+<div class="main-content">
+
+    <!-- Header -->
+    <div class="header d-flex align-items-center" style="min-height: 180px;">
+        <span class="mask opacity-8"></span>
+    </div>
+    <!-- Page content -->
+    <div class="container-fluid mt-6">
+        <div class="row">
+            {% if user.is_authenticated %}
+
+
+            <div class="col-xl-3 order-xl-1 mb-5 mb-xl-0">
+                <div class="card card-profile shadow">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-3 order-lg-2">
+                            <div class="card-profile-image">
+                                <a href="#">
+                                    <img src="{{user.profile.photo.url}}" class="rounded-circle" width="100px"
+                                        height="100px" style="object-fit: cover;">
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body pt-0 pt-md-4">
+
+                        <div class="mt-5 pt-5">
+                            <div class="text-center">
+                                <h2 class="text-center pb-3">
+                                    {{ request.user.username.capitalize }}
+                                </h2>
+
+                            </div>
+
+                            <hr class="my-4">
+                            <div class="row">
+                                <a href="{% url 'userprofile' %}" class="col-md-12 py-2"><i
+                                        class="bi bi-person-fill mx-2"></i>My Profile</a>
+                                <a href="{% url 'my_recommendations' %}" class="col-md-12 py-2"><i
+                                        class="bi bi-file-text mx-2"></i>My
+                                    Recommmendations</a>
+                                <a href="{% url 'feedback' %}" class="col-md-12 py-2"><i
+                                        class="bi bi-file-text mx-2"></i>Feedback</a>
+                                <a href="{% url 'my_history' %}" class="col-md-12 py-2"><i
+                                        class="bi bi-file-text mx-2"></i>History</a>
+                                <a href="{% url 'logout' %}" class="col-md-12 py-2"><i
+                                        class="bi bi-arrow-up-right mx-2"></i>Logout</a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="col-xl-9 order-xl-2">
+                <div class="card bg-secondary shadow">
+                    {% if scholarship %}
+                    <div class="container-fluid my-4">
+                        <div class="row">
+                            <div class="col-12 mt-3">
+                                <div class="card border">
+                                    <div class="card-horizontal">
+                                        <div class="img-square-wrapper">
+                                            {% if 'http' not in scholarship.image_link %}
+                                            <img class="" src="{% static 'assets/img/image_skipped.png' %}"
+                                                alt="Card image cap"
+                                                style="width: 300px;height:300px; object-fit: contain;">
+                                            {% else %}
+                                            <img class="" src="{{scholarship.image_link}}" alt="Card image cap"
+                                                style="width: 300px;height:300px; object-fit: contain;">
+
+                                            {% endif %}
+
+                                        </div>
+                                        <div class="card-body">
+                                            <h2 class="card-title"><a
+                                                    href="{% url 'scholarship_detail' scholarship.pk %}"
+                                                    target="_blank">{{scholarship.title}}</a></h2>
+
+                                            <div class="my-3">
+                                                {% if scholarship.tution_structure %}
+                                                <span><strong><i class="bi bi-coin mx-2"></i>
+                                                        {{scholarship.tution_structure}}</strong></span><br>
+                                                {% endif %}
+
+                                                {% if scholarship.degree %}
+                                                <span><strong><i class="bi bi-mortarboard mx-2"></i>
+                                                        {{scholarship.degree}}</strong></span><br>
+                                                {% endif %}
+
+                                                {% if scholarship.subject %}
+                                                <span><strong><i class="bi bi-book mx-2"></i>
+                                                        {{scholarship.subject}}</strong></span><br>
+                                                {% endif %}
+
+                                                {% if scholarship.country %}
+                                                <span><strong><i class="bi bi-geo-alt mx-2"></i>
+                                                        {{scholarship.country}}</strong></span><br>
+                                                {% endif %}
+                                                {% if scholarship.apply_date %}
+                                                <span><strong><i class="bi bi-calendar-check mx-2"></i>
+                                                        {{scholarship.apply_date}}</strong></span>
+                                                {% endif %}
+
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                    <!-- <div class="card-footer">
+                                                                                                        <small class="text-muted">Last updated 3 mins ago</small>
+                                                                                                    </div> -->
+                                </div>
+                                <div class="card border p-4 my-3">
+                                    <div class="card-horizontal">
+
+                                        <div class="card-body">
+
+                                            <div class="my-1">
+                                                <h2 class="mb-4">Scholarship Description :</h2>
+                                                <p>{{scholarship.scholarship_details}}</p>
+
+                                            </div>
+                                            <div class="d-flex justify-content-end">
+                                                <a href="{{scholarship.link}}" target="_blank"
+                                                    style="background-color: #31526B; color:white;"
+                                                    class="btn btn-primary">Learn More</a>
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+
+
+                        </div>
+                    </div>
+                    {% endif %}
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+
+{% endblock %}
+
+
+
+{% else %}
+<h1> You are not logged in </h1>
+
+
+{% endif %}
