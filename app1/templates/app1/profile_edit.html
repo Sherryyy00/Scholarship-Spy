@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% if user.is_authenticated %}
+{% load static %}
+
+{% block custom_css_links %}
+<link href="{% static 'assets/css/profile_style.css' %}" rel="stylesheet">
+{% endblock custom_css_links %}
+
+{% block body %}
+<div class="main-content">
+
+  <!-- Header -->
+  <div class="header d-flex align-items-center" style="min-height: 180px;">
+    <span class="mask opacity-8"></span>
+  </div>
+  <!-- Page content -->
+  <div class="container-fluid mt-6">
+    <div class="row">
+      <div class="col-xl-3 order-xl-1 mb-5 mb-xl-0">
+        <div class="card card-profile shadow">
+          <div class="row justify-content-center">
+            <div class="col-lg-3 order-lg-2">
+              <div class="card-profile-image">
+                <a href="#">
+                  <img src="{{user.profile.photo.url}}" class="rounded-circle" width="100px" height="100px"
+                    style="object-fit: cover;"> </a>
+              </div>
+            </div>
+          </div>
+          <div class="card-body pt-0 pt-md-4">
+
+            <div class="mt-5 pt-5">
+              <div class="text-center">
+                <h2 class="text-center pb-3">
+                  {{ request.user.username.capitalize }}
+                </h2>
+
+              </div>
+
+              <hr class="my-4">
+              <div class="row">
+                <a href="{% url 'userprofile' %}" class="col-md-12 py-2"><i class="bi bi-person-fill mx-2"></i>My
+                  Profile</a>
+                <a href="{% url 'my_recommendations' %}" class="col-md-12 py-2"><i class="bi bi-file-text mx-2"></i>My
+                  Recommmendations</a>
+                <a href="{% url 'feedback' %}" class="col-md-12 py-2"><i class="bi bi-file-text mx-2"></i>Feedback</a>
+                <a href="{% url 'my_history' %}" class="col-md-12 py-2"><i class="bi bi-file-text mx-2"></i>History</a>
+                <a href="{% url 'logout' %}" class="col-md-12 py-2"><i class="bi bi-arrow-up-right mx-2"></i>Logout</a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-9 order-xl-2">
+        <div class="card bg-secondary shadow">
+          <div class="card-header bg-white border-0">
+            <div class="row align-items-center">
+              <div class="col-8">
+                <h3 class="mb-0">My account</h3>
+              </div>
+
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Form -->
+            {{p_form.non_field_errors}}
+            <form action="" method="POST" enctype="multipart/form-data">
+              {% csrf_token %}
+              {% if messages %}
+              {% for message in messages %}
+              <div class="alert alert-{{message.tags}}"
+                style="background-color: #5E72E4;padding: 15px 20px;margin-bottom: 20px;color: white;border-radius: 7px;">
+                {{message}}
+              </div>
+
+              {% endfor %}
+              {% endif %}
+              {% block content %}{% endblock %}
+              <h6 class="heading-small text-muted mb-4">User information</h6>
+              <div class="pl-lg-4">
+                <div class="row">
+                  <div class="col-lg-6">
+                    <div class="form-group focused">
+                      <label class="form-control-label" for="id_First_Name">First name</label>
+                      <input type="text" name="first_name" maxlength="30" id="id_First_Name"
+                        class="form-control form-control-alternative" value="{{user.first_name}}">
+
+                    </div>
+                  </div>
+                  <div class="col-lg-6">
+                    <div class="form-group focused">
+                      <label class="form-control-label" for="id_Last_Name">Last name</label>
+
+                      <input type="text" name="last_name" maxlength="30" id="id_Last_Name"
+                        class="form-control form-control-alternative" value="{{user.last_name}}">
+
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-lg-6">
+                    <div class="form-group">
+                      <!-- <label class="form-control-label" for="input-email">Email address</label> -->
+                      <label class="form-control-label" for="id_Email">Email</label>
+                      <input type="email" name="email" class="form-control form-control-alternative" maxlength="50"
+                        id="id_Email" value="{{user.email}}">
+                      <input type="hidden" id="input-email-hidden" class="form-control form-control-alternative"
+                        name="hidden_user_email" value="{{user.email}}">
+                    </div>
+                  </div>
+                  <div class="col-lg-6">
+                    <div class="form-group">
+                      <!-- <label class="form-control-label" for="input-email">Email address</label> -->
+                      <label class="form-control-label" for="id_photo">Profile Photo</label>
+                      <input type="file" name="photo" class="form-control form-control-alternative" maxlength="50"
+                        id="id_photo" value="{{user.profile.photo.url}}" accept="image/jpeg">
+                    </div>
+                  </div>
+                </div>
+
+
+                <div class="row">
+                  <div class="col-lg-6">
+                    <div class="form-group">
+                      <!-- <label class="form-control-label" for="input-email">Email address</label> -->
+                      <label class="form-control-label" for="highest_qualification">Highest Qualification</label>
+                      {% if user.profile.highest_qualification %}
+                      <input type="text" name="highest_qualification" class="form-control form-control-alternative"
+                        maxlength="50" id="highest_qualification" value="{{user.profile.highest_qualification}}">
+                      {% else %}
+                      <input type="text" name="highest_qualification" class="form-control form-control-alternative"
+                        maxlength="50" id="highest_qualification" value="">
+                      {% endif %}
+
+                    </div>
+                  </div>
+                  <div class="col-lg-6">
+                    <div class="form-group">
+                      <!-- <label class="form-control-label" for="input-email">Email address</label> -->
+                      <label class="form-control-label" for="nationality">Nationality</label>
+                      {% if user.profile.nationality %}
+                      <input type="text" name="nationality" class="form-control form-control-alternative" maxlength="50"
+                        id="nationality" value="{{user.profile.nationality}}">
+                      {% else %}
+                      <input type="text" name="nationality" class="form-control form-control-alternative" maxlength="50"
+                        id="nationality" value="">
+                      {% endif %}
+
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+              <hr class="my-4">
+              <!-- Address -->
+              <h6 class="heading-small text-muted mb-4">Academic Information</h6>
+              <div class="pl-lg-4">
+                <div class="row">
+                  <div class="col-lg-4">
+                    <div class="form-group">
+                      <label for="age" class="form-control-label">Age</label>
+                      <input type="number" name="age" maxlength="300" id="age"
+                        class="form-control form-control-alternative" value="{{user.profile.age}}">
+                    </div>
+                  </div>
+                  <div class="col-lg-4">
+                    <div class="form-group">
+                      <label for="dob" class="form-control-label">DOB</label>
+                      <input type="date" name="dob" maxlength="300" id="dob"
+                        class="form-control form-control-alternative" value="{{user.profile.dob| date:'Y-m-d'}}">
+                    </div>
+                  </div>
+                  <div class="col-lg-4">
+                    {% if user.profile.cgpa %}
+                    <div class="form-group">
+                      <label for="cgpa" class="form-control-label">CGPA</label>
+                      <input type="text" name="cgpa" maxlength="300" id="cgpa"
+                        class="form-control form-control-alternative" value="{{user.profile.cgpa}}">
+                    </div>
+                    {% else %}
+                    <div class="form-group">
+                      <label for="cgpa" class="form-control-label">CGPA</label>
+                      <input type="text" name="cgpa" maxlength="300" id="cgpa"
+                        class="form-control form-control-alternative">
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <hr class="my-4">
+
+
+              <input type="submit" value="Save" class="btn btn-primary" style="background-color: #31526B; color:white;">
+              <a href="{% url 'userprofile' %}">
+                <button class="btn btn-secondary" id="sign-in-btn">Cancel</button>
+              </a>
+
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<script>
+  function openPage() {
+    var x = document.getElementById("search").value;
+
+    if (x === "berlin" || x === "Berlin") {
+      window.open("/berlin-scholarship.html");
+    }
+    if (x === "canada" || x === "Canada") {
+      window.open("/canada-scholarship.html");
+    }
+    if (x === "phd" || x === "PhD" || x === "PHD") {
+      window.open("/phd-list.html");
+    }
+  }
+
+
+</script>
+{% endblock %}
+
+
+
+{% else %}
+<h1> You are not logged in </h1>
+
+
+{% endif %}

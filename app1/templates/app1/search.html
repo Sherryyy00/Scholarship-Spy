@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block body %}
+
+{% load static %}
+<!-- ======= Header ======= -->
+<header id="header" class="fixed-top">
+  <div class="container d-flex align-items-center">
+    <h1 class="logo me-auto"><a href="http://127.0.0.1:8000/">Scholarship <b>Spy</b></a></h1>
+    <nav id="navbar" class="navbar order-last order-lg-0">
+      <ul>
+        <li><a class="active" href="http://127.0.0.1:8000/">Home</a></li>
+        <li><a href="/events/">Scholarships</a></li>
+        <li><a href="{% url 'trainers' %}">Degrees</a></li>
+        <li><a href="{% url 'courses' %}">Scholarship Regions</a></li>
+        <li><a href="{% url 'about' %}">Guidelines</a></li>
+        <i class="bi bi-list mobile-nav-toggle"></i>
+    </nav><!-- .navbar -->
+
+    <a href="login/" class="get-started-btn">Get Started</a>
+
+
+  </div>
+</header><!-- End Header -->
+
+<section id="imgbg" class="d-flex justify-content-center align-items-center">
+  <img src="{% static 'assets/img/spy-bg.jpg'%}" class="imgbg" alt="">
+  <div class="container position-absolute" data-aos="zoom-in" data-aos-delay="100">
+    <!--- ===== SEARCH BAR ===== -->
+
+    <form action="{% url 'search' %}" method="GET" class="search-form">
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <select class="form-control" id="exampleFormControlSelect1" name='query'>
+              <option value="">Select Country</option>
+              <option value="Australia">Australia</option>
+              <option value="Austria">Austria</option>
+              <option value="Nigeria">Nigeria</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="d-flex flex-row">
+            <div class="form-group w-100">
+              <select class="form-control" id="exampleFormControlSelect1" name='degree'>
+                <option value="">Select Degree</option>
+                <option value="PhD">PhD</option>
+                <option value="Masters">Masters</option>
+                <option value="Bachelors">Bachelors</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="search-btn"><i class="bi bi-search"></i></button>
+        </div>
+      </div>
+  </div>
+</section>
+
+
+{% if 'data == []' %}
+
+<h1> No Scholarships Found </h1>
+
+{% else %}
+
+
+
+
+{% for item in data %}
+
+{{ item.Country }}
+
+{% endfor %}
+
+
+
+{% endif %}
+
+
+
+
+
+{% endblock body %}

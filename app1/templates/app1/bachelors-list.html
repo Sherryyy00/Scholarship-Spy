@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+
+{% block body %}
+{% load static%}
+
+  <main id="main" data-aos="fade-in">
+
+    <!-- ======= Breadcrumbs ======= -->
+     <div class="breadcrumbs">
+      <div class="container">
+        <h2>Bachelors Scholarships</h2>
+        {% comment %} <p>​​​​​There are many scholarships available at postgraduate and doctorate levels to help academically gifted students and faculty. </p> {% endcomment %}
+      </div>
+    </div><!-- End Breadcrumbs --> 
+
+    <!-- ======= Trainers Section ======= -->
+    <section id="trainers" class="trainers">
+      <div class="container" data-aos="fade-up">
+
+        <div class="row" data-aos="zoom-in" data-aos-delay="100">
+          <div class="col-lg-6 col-md-6 d-flex align-items-stretch">
+            <div class="member">
+              {% comment %} <img src="{% static 'assets/img/trainers/phd.jpg'%}" class="img-fluid" alt=""> {% endcomment %}
+              
+            </div>
+          </div>
+
+        </div>
+        {% comment %} <ul>
+          {% for phd in scholarshipsone %}
+            
+           <li> {{phd}} </li>
+          
+          {% endfor %}
+        </ul>  {% endcomment %}
+
+        <h1>List of Bachelors Scholarships:</h1>
+        <ul>
+          {% for scholarbachelors in scholarshiptwo %}
+               <li>   {{scholarbachelors}}  </li> 
+          {% endfor %}
+        </ul> 
+        {% comment %} 
+        <h4>
+        <ul><a href="">
+            Rhodes Scholarships at Oxford University for International Students
+        </a> </ul>
+        <ul><a href="">
+            Italian Government Scholarships for Foreign Students
+        </a></ul>
+        <ul><a href="">
+            Rotary Foundation Global Scholarship Grants for Development
+        </a></ul>
+        <ul><a href="">
+            The Global Excellence Scholarship at the University of Western Australia
+        </a></ul>
+        <ul><a href="">
+            FINCAD Women in Finance Scholarship
+        </a></ul>
+        <ul><a href="">
+            Australia Awards Scholarships
+        </a></ul>
+        <ul><a href="">
+            JFUNU Scholarships for PhD in Sustainability Science
+        </a></ul>
+        <ul><a href="">
+            Heinrich Boll Scholarships in Germany for International Students
+        </a></ul>
+        <ul><a href="">
+            Fulbright Foreign Student Program in USA
+        </a></ul>
+    </h4> {% endcomment %}
+        {% comment %} <ul><a href="">
+            Heinrich Boll Scholarships in Germany for International Students
+        </a></ul>
+        <ul><a href="">
+            Heinrich Boll Scholarships in Germany for International Students
+        </a></ul> {% endcomment %}
+         
+     
+ 
+      </div>
+    </section><!-- End Trainers Section -->
+
+  </main><!-- End #main -->
+
+  
+{% endblock %}
+</html>

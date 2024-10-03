@@ -1,0 +1,880 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block body %}
+
+<!-- ======= Header ======= -->
+
+<style>
+  form {
+    max-width: 1100px;
+    width: 100%;
+    z-index: 1000;
+  }
+
+  /* Search Form */
+
+  .styled-input {
+    float: left;
+    background: #fff;
+    /* border: 1px solid #EFEFEF; */
+    border-radius: 3px;
+    -webkit-box-shadow: inset 0 -1px 4px 0 rgba(0, 0, 0, 0.20);
+    box-shadow: inset 0 -1px 4px 0 rgba(0, 0, 0, 0.20);
+    width: 100%;
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .styled-input.multi {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: stretch;
+    -ms-flex-align: stretch;
+    align-items: stretch;
+    -webkit-box-pack: justify;
+    -ms-flex-pack: justify;
+    justify-content: space-between;
+    padding: 12px 0;
+    height: auto;
+  }
+
+  .styled-input label {
+    color: #5a5a5a;
+    font-size: 16px;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 1.92px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    -webkit-transition: all 0.25s cubic-bezier(0.2, 0, 0.03, 1);
+    -o-transition: all 0.25s cubic-bezier(0.2, 0, 0.03, 1);
+    transition: all 0.25s cubic-bezier(0.2, 0, 0.03, 1);
+    pointer-events: none;
+  }
+
+  .styled-input.multi label {
+    padding: 10px 0 0;
+  }
+
+  .styled-input.active {
+    border: 1px solid #D0E5BA;
+    -webkit-box-shadow: inset 0 -2px 4px 0 #D5EEBB;
+    box-shadow: inset 0 -2px 4px 0 #D5EEBB;
+  }
+
+  .styled-input .icon--check,
+  .styled-input .icon--error,
+  .styled-input .chevron-down {
+    display: inline-block;
+    position: absolute;
+    top: 50%;
+    right: 2%;
+    -webkit-transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+    z-index: 0;
+  }
+
+  .styled-input .icon--check,
+  .styled-input .icon--error {
+    display: none;
+  }
+
+  .styled-input .icon--check {
+    right: 0%;
+  }
+
+  .styled-input input.success~.icon--check,
+  .styled-input input.error~.icon--error {
+    display: inline-block;
+  }
+
+  .styled-input label.error,
+  .styled-input input:focus~label.error,
+  .styled-input input#fn:valid~label.error,
+  .styled-input input#ln:valid~label.error {
+    font-size: 15px;
+    text-transform: none;
+    letter-spacing: normal;
+    color: #ff523d;
+    top: 53px;
+    left: -3px;
+  }
+
+  .styled-input.multi.error {
+    margin-bottom: 20px;
+  }
+
+  .styled-input.multi>div {
+    position: relative;
+    width: 100%;
+    border-right: 2px solid #ccc;
+  }
+
+  .styled-input.multi>div:nth-last-of-type(1) {
+    border-right: 0;
+  }
+
+  .styled-input.multi>div input,
+  .styled-input.multi>div label {
+    padding-left: 12px;
+  }
+
+  .styled-input.multi>div input {
+    padding-top: 20px;
+  }
+
+
+  .styled-input input:focus,
+  .styled-input textarea:focus,
+  .styled-input select:focus {
+    outline: none;
+  }
+
+  .styled-input input,
+  .styled-input textarea,
+  .styled-input select {
+    color: #4A4A4A;
+    border: 0;
+    width: 90%;
+    font-size: 18px;
+    padding-top: 20px;
+    background: transparent;
+  }
+
+  .styled-input select {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    position: relative;
+    z-index: 1;
+    left: 11px;
+  }
+
+  /* Focus Label */
+
+  .styled-input input:focus~label,
+  .styled-input input#fn:valid~label,
+  .styled-input input#ln:valid~label,
+  .styled-input input#city[filled="true"]:valid~label,
+  .styled-input #select-state label {
+    font-size: 13px;
+    letter-spacing: 1.56px;
+    color: #31526B;
+    ;
+    top: -12.8px;
+    -webkit-transition: all 0.125s cubic-bezier(0.2, 0, 0.03, 1);
+    -o-transition: all 0.125s cubic-bezier(0.2, 0, 0.03, 1);
+    transition: all 0.125s cubic-bezier(0.2, 0, 0.03, 1);
+  }
+
+  @media (max-width: 786px) {
+    form {
+      margin-top: 30px;
+      font-size: 12px;
+    }
+
+    #imgbg::after {
+      display: none;
+    }
+
+    .inner_specific_div {
+      display: none;
+    }
+  }
+
+  @media (min-width: 991px) {
+    .styled-input.multi {
+      height: 70px;
+    }
+  }
+
+  @media (min-width: 768px) and (max-width: 990px) {
+    .styled-input.multi {
+      height: 60px;
+      padding: 8px 0;
+    }
+
+    .styled-input.multi>div input {
+      padding-top: 14px;
+    }
+
+    .styled-input.multi label {
+      padding: 7px 0 0;
+    }
+
+    .styled-input input#fn:valid~label,
+    .styled-input input#ln:valid~label,
+    .styled-input input#city[filled="true"]:valid~label,
+    .styled-input.multi input:focus~label,
+    .styled-input #select-state label {
+      top: -9px;
+    }
+
+    .styled-input.multi.error {
+      margin-bottom: 30px;
+    }
+
+    .styled-input label.error,
+    .styled-input input:focus~label.error,
+    .styled-input input#fn:valid~label.error,
+    .styled-input input#ln:valid~label.error {
+      font-size: 13px;
+      top: 53px;
+    }
+
+    .search-area .form-area button.serach-btn {
+      height: 50px;
+      padding: 0;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .examples [class^="col-"] {
+      padding: 0
+    }
+
+    .styled-input.multi>div {
+      background-color: #fff;
+      margin-bottom: 10px;
+      display: block;
+      border: 1px solid #EFEFEF;
+      border-radius: 3px;
+      -webkit-box-shadow: inset 0 -1px 4px 0 rgba(0, 0, 0, 0.20);
+      box-shadow: inset 0 -1px 4px 0 rgba(0, 0, 0, 0.20);
+      width: 100%;
+      padding: 16px 16px 8px 11.2px;
+      height: 50px;
+    }
+
+    .styled-input.multi {
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      border: 0;
+      -webkit-box-shadow: none;
+      box-shadow: none;
+      background: transparent;
+      margin-bottom: 0;
+    }
+
+    .styled-input.multi>div label {
+      padding: 12px 0 0 12px;
+    }
+
+    .styled-input.multi>div input:valid~label,
+    .styled-input.multi>div input:focus~label,
+    .styled-input.multi #select-state>label {
+      padding-top: 15px;
+    }
+
+    .styled-input.multi>div input {
+      padding-left: 0;
+      padding-top: 2px;
+      position: relative;
+      z-index: 2;
+      width: 100%;
+    }
+
+    .styled-input select {
+      left: 0;
+      padding-top: 2px;
+
+    }
+
+
+    .styled-input.multi.error {
+      margin-bottom: 0;
+    }
+
+    .styled-input.multi>div.error {
+      margin-bottom: 30px;
+    }
+
+    .styled-input.multi>div.error label.error {
+      padding-top: 0;
+    }
+  }
+
+  .no-pad-left-10 {
+    padding-left: 5px;
+  }
+
+  @media (max-width: 991px) and (min-width: 768px) {
+    .no-pad-left-10 {
+      padding-left: 0px;
+      margin-left: -5px;
+      width: calc(16.66666667% + 5px);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .no-pad-left-10 {
+      padding-left: 15px;
+      margin-left: 0;
+    }
+  }
+
+  .form-area button.serach-btn {
+    border: none;
+    font-size: 20px;
+    background: #31526B;
+    text-align: center;
+    color: white;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 1.01px;
+    width: 100%;
+    height: 70px;
+    -o-transition: all 0.25s ease-out;
+    transition: all 0.25s ease-out;
+    -webkit-transition: all 0.25s ease-out;
+    -moz-transition: all 0.25s ease-out;
+  }
+
+  .form-area button.serach-btn:hover {
+    background: #31526B;
+    -webkit-box-shadow: -2px -2px 4px -4px rgba(0, 0, 0, 0.02), 0 3px 9px 0 rgba(0, 0, 0, 0.1), 0 2px 4px 0 rgba(0, 0, 0, 0.14);
+    box-shadow: -2px -2px 4px -4px rgba(0, 0, 0, 0.02), 0 3px 9px 0 rgba(0, 0, 0, 0.1), 0 2px 4px 0 rgba(0, 0, 0, 0.14);
+  }
+
+  .form-area button.serach-btn:focus {
+    outline: none;
+  }
+
+  @media only screen and (max-width: 991px) {
+    form {
+      z-index: 1000;
+    }
+
+    .form-area button.serach-btn {
+      font-size: 20px;
+      height: 60px;
+      padding: 0;
+    }
+  }
+
+  @media only screen and (max-width: 767px) {
+    form {
+      z-index: 1000;
+    }
+
+    .form-area button.serach-btn {
+      font-size: 22px;
+      padding: 7px 20px;
+      width: 100%;
+      height: 50px;
+      margin-top: -12px;
+      margin-bottom: 20px;
+    }
+  }
+
+  #image_bg {
+    width: 100%;
+    object-fit: cover;
+  }
+
+  #imgbg::after {
+    content: "";
+    width: 75%;
+    height: 200px;
+    background-color: rgb(255, 255, 255);
+    position: absolute;
+    right: -40px;
+    bottom: -120px;
+    transform: rotate(-14deg);
+    z-index: 1;
+  }
+
+  .inner_specific_div {
+    width: 75%;
+    height: 200px;
+    background-color: rgb(255, 255, 255);
+    position: absolute;
+    bottom: -120px;
+    left: -40px;
+    transform: rotate(14deg);
+  }
+</style>
+
+
+<section id="imgbg" class="d-flex justify-content-center align-items-center">
+  <div class="inner_specific_div"></div>
+  <img src="{% static 'assets/img/spy-bg.jpg'%}" class="imgbg" alt="" id="image_bg">
+  <div class="container position-absolute" data-aos="zoom-in" data-aos-delay="100">
+    <!--- ===== SEARCH BAR ===== -->
+
+    <form action="{% url 'search_results' %}" method="get" id="header-search-people" class="form-area"
+      autocomplete="off">
+      <div class="row">
+        <div class="col-md-11">
+          <div class="styled-input wide multi">
+            <div class="input-title" id="input-title">
+              <input type="text" name="scholarship_title" id="fn" autocomplete="off" data-placeholder-focus="false" />
+              <label>Title</label>
+              <svg class="icon--check" width="21px" height="17px" viewBox="0 0 21 17" version="1.1"
+                xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linecap="round">
+                  <g id="UI-Elements-Forms" transform="translate(-255.000000, -746.000000)" fill-rule="nonzero"
+                    stroke="#81B44C" stroke-width="3">
+                    <polyline id="Path-2" points="257 754.064225 263.505943 760.733489 273.634603 748"></polyline>
+                  </g>
+                </g>
+              </svg>
+              <svg class="icon--error" width="15px" height="15px" viewBox="0 0 15 15" version="1.1"
+                xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linecap="round">
+                  <g id="UI-Elements-Forms" transform="translate(-550.000000, -747.000000)" fill-rule="nonzero"
+                    stroke="#D0021B" stroke-width="3">
+                    <g id="Group" transform="translate(552.000000, 749.000000)">
+                      <path d="M0,11.1298982 L11.1298982,-5.68434189e-14" id="Path-2-Copy"></path>
+                      <path d="M0,11.1298982 L11.1298982,-5.68434189e-14" id="Path-2-Copy-2"
+                        transform="translate(5.564949, 5.564949) scale(-1, 1) translate(-5.564949, -5.564949) "></path>
+                    </g>
+                  </g>
+                </g>
+              </svg>
+            </div>
+            <div class="state" id="select-state" style="font-size: 15px;">
+              <select name="country" style="font-size: 15px;">
+                <option value="" style="font-size: 15px;">Default</option>
+                {% for country in all_countries %}
+                <option value="{{country.name}}" style="font-size: 15px;">{{country.name}}</option>
+                {% endfor %}
+              </select>
+              <label>Country</label>
+              <svg class="chevron-down" width="17px" height="10px" viewBox="0 0 17 10" version="1.1"
+                xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                  <g id="UI-Elements-Forms" transform="translate(-840.000000, -753.000000)" stroke="#4A4A4A"
+                    stroke-width="0.9">
+                    <g id="Done-Copy-2" transform="translate(622.000000, 727.000000)">
+                      <polyline id="Rectangle-16"
+                        transform="translate(226.400000, 27.400000) rotate(-45.000000) translate(-226.400000, -27.400000) "
+                        points="231.8 32.8 221 32.8 221 22"></polyline>
+                    </g>
+                  </g>
+                </g>
+              </svg>
+            </div>
+            <div class="state" id="select-state">
+              <select name="field_of_interest" style="font-size: 15px;" name="field_of_interest">
+                <option value="" style="font-size: 15px;">Default</option>
+                {% for field in all_field_of_interests %}
+                <option value="{{field.name}}" style="font-size: 15px;">{{field.name}}</option>
+                {% endfor %}
+              </select>
+              <label>Field of Interest</label>
+              <svg class="chevron-down" width="17px" height="10px" viewBox="0 0 17 10" version="1.1"
+                xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                  <g id="UI-Elements-Forms" transform="translate(-840.000000, -753.000000)" stroke="#4A4A4A"
+                    stroke-width="0.9">
+                    <g id="Done-Copy-2" transform="translate(622.000000, 727.000000)">
+                      <polyline id="Rectangle-16"
+                        transform="translate(226.400000, 27.400000) rotate(-45.000000) translate(-226.400000, -27.400000) "
+                        points="231.8 32.8 221 32.8 221 22"></polyline>
+                    </g>
+                  </g>
+                </g>
+              </svg>
+            </div>
+            <div class="state" id="select-state">
+              <select name="degree" style="font-size: 15px;" name="degree">
+                <option value="" name="degree" style="font-size: 15px;">Default</option>
+                {% for degree in all_degree_types %}
+                <option value="{{degree.name}}" name="degree" style="font-size: 15px;">{{degree.name}}</option>
+                {% endfor %}
+              </select>
+              <label>Degree</label>
+              <svg class="chevron-down" width="17px" height="10px" viewBox="0 0 17 10" version="1.1"
+                xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                  <g id="UI-Elements-Forms" transform="translate(-840.000000, -753.000000)" stroke="#4A4A4A"
+                    stroke-width="0.9">
+                    <g id="Done-Copy-2" transform="translate(622.000000, 727.000000)">
+                      <polyline id="Rectangle-16"
+                        transform="translate(226.400000, 27.400000) rotate(-45.000000) translate(-226.400000, -27.400000) "
+                        points="231.8 32.8 221 32.8 221 22"></polyline>
+                    </g>
+                  </g>
+                </g>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-1 no-pad-left-10">
+          <button type="submit" class="primary-btn serach-btn" id="submit_btn"><i class="bi bi-search"></i></button>
+        </div>
+      </div>
+    </form>
+
+
+  </div>
+</section>
+<!-- End Hero -->
+
+<main id="main">
+
+  <!-- ======= About Section ======= -->
+  <section id="about" class="about">
+    <div class="container" data-aos="fade-up">
+
+      <div class="row">
+        <div class="col-lg-6 order-1 order-lg-2" data-aos="fade-left" data-aos-delay="100">
+          <img src="{% static 'assets/img/about.jpg'%}" class="img-fluid" alt="">
+        </div>
+        <div class="col-lg-6 pt-4 pt-lg-0 order-2 order-lg-1 content">
+          <h3>Scholarships, Grants, Fellowships, and other student Funding.</h3>
+          <p class="fst-italic">
+            Find and compare scholarships for college students, college grants, fellowships, federal financial aid and
+            other forms of student funding to cover expenses for international Bachelors, Masters and PhDs worldwide.
+          </p>
+          <ul>
+            <li><i class="bi bi-check-circle"></i> We've made finding the right scholarship easier with our database of
+              over 2 thousand scholarships from around the world</li>
+            <li><i class="bi bi-check-circle"></i> Our search tool can help you find scholarships based on your
+              interests, so you don't have to waste time applying for ones that aren't a good fit</li>
+            <li><i class="bi bi-check-circle"></i> We have everything from full tuition grants to partial tuition and
+              even living expenses.</li>
+          </ul>
+          <p>
+            Start your search today by using our Scholarship Spy or browse through our extensive list of scholarships on
+            this page.
+          </p>
+
+        </div>
+      </div>
+
+    </div>
+  </section><!-- End About Section -->
+
+  <!-- ======= Counts Section ======= -->
+  <section id="counts" class="counts section-bg">
+    <div class="container">
+
+      <div class="row counters">
+
+        <div class="col-lg-3 col-6 text-center">
+          <span data-purecounter-start="0" data-purecounter-end="1232" data-purecounter-duration="1"
+            class="purecounter"></span>
+          <p>Enrolled Students</p>
+        </div>
+
+        <div class="col-lg-3 col-6 text-center">
+          <span data-purecounter-start="0" data-purecounter-end="64" data-purecounter-duration="1"
+            class="purecounter"></span>
+          <p>Scholarships</p>
+        </div>
+
+        <div class="col-lg-3 col-6 text-center">
+          <span data-purecounter-start="0" data-purecounter-end="42" data-purecounter-duration="1"
+            class="purecounter"></span>
+          <p>Training Programs</p>
+        </div>
+
+        <div class="col-lg-3 col-6 text-center">
+          <span data-purecounter-start="0" data-purecounter-end="15" data-purecounter-duration="1"
+            class="purecounter"></span>
+          <p>Guiders</p>
+        </div>
+
+      </div>
+
+    </div>
+  </section><!-- End Counts Section -->
+
+  <!-- ======= Why Us Section ======= -->
+  <section id="why-us" class="why-us">
+    <div class="container" data-aos="fade-up">
+
+      <div class="row">
+        <div class="col-lg-4 d-flex align-items-stretch">
+          <div class="content">
+            <h3>Why Choose Scholarship Spy?</h3>
+            <p>
+              We're providing the facility to students for finding different scholarhips based on their interest,
+              skills, and qualification in one detailed place.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+              dolore magna aliqua. Duis aute irure dolor in reprehenderit
+              Asperiores dolores sed et. Tenetur quia eos. Autem tempore quibusdam vel necessitatibus optio ad corporis.
+            </p>
+            <div class="text-center">
+              <a href="about.html" class="more-btn">Learn More <i class="bx bx-chevron-right"></i></a>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8 d-flex align-items-stretch" data-aos="zoom-in" data-aos-delay="100">
+          <div class="icon-boxes d-flex flex-column justify-content-center">
+            <div class="row">
+              <div class="col-xl-4 d-flex align-items-stretch">
+                <div class="icon-box mt-4 mt-xl-0">
+                  <i class="bx bx-receipt"></i>
+                  <h4>Recommendations</h4>
+                  <p>Scholarship spy helps the users to find the best-suited scholarships according to their interests.
+                  </p>
+                </div>
+              </div>
+              <div class="col-xl-4 d-flex align-items-stretch">
+                <div class="icon-box mt-4 mt-xl-0">
+                  <i class="bx bx-cube-alt"></i>
+                  <h4>Single Repository</h4>
+                  <p>Scholarship spy provides a single repository of scholarships for users.
+                  </p>
+                </div>
+              </div>
+              <div class="col-xl-4 d-flex align-items-stretch">
+                <div class="icon-box mt-4 mt-xl-0">
+                  <i class="bx bx-images"></i>
+                  <h4>Categorical Searches</h4>
+                  <p>Users can easily search for all available scholarships.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div><!-- End .content-->
+        </div>
+      </div>
+
+    </div>
+  </section><!-- End Why Us Section -->
+
+  <!-- ======= Features Section ======= -->
+  <section id="features" class="features">
+    <div class="container" data-aos="fade-up">
+
+      <div class="row" data-aos="zoom-in" data-aos-delay="100">
+        <div class="col-lg-3 col-md-4">
+          <div class="icon-box">
+            <i class="ri-store-line" style="color: #ffbb2c;"></i>
+            <h3><a href="">Scholarships</a></h3>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-4 mt-4 mt-md-0">
+          <div class="icon-box">
+            <i class="ri-bar-chart-box-line" style="color: #5578ff;"></i>
+            <h3><a href="">Fields</a></h3>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-4 mt-4 mt-md-0">
+          <div class="icon-box">
+            <i class="ri-calendar-todo-line" style="color: #e80368;"></i>
+            <h3><a href="">Guides</a></h3>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-4 mt-4 mt-lg-0">
+          <div class="icon-box">
+            <i class="ri-paint-brush-line" style="color: #e361ff;"></i>
+            <h3><a href="">Categories</a></h3>
+          </div>
+        </div>
+        {% comment %} <div class="col-lg-3 col-md-4 mt-4">
+          <div class="icon-box">
+            <i class="ri-database-2-line" style="color: #47aeff;"></i>
+            <h3><a href="">Data</a></h3>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-4 mt-4">
+          <div class="icon-box">
+            <i class="ri-gradienter-line" style="color: #ffa76e;"></i>
+            <h3><a href="">Goal</a></h3>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-4 mt-4">
+          <div class="icon-box">
+            <i class="ri-file-list-3-line" style="color: #11dbcf;"></i>
+            <h3><a href="">Blogs</a></h3>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-4 mt-4">
+          <div class="icon-box">
+            <i class="ri-price-tag-2-line" style="color: #4233ff;"></i>
+            <h3><a href="">Institutes</a></h3>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-4 mt-4">
+          <div class="icon-box">
+            <i class="ri-anchor-line" style="color: #b2904f;"></i>
+            <h3><a href="">Conferences</a></h3>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-4 mt-4">
+          <div class="icon-box">
+            <i class="ri-disc-line" style="color: #b20969;"></i>
+            <h3><a href="">Kickoff</a></h3>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-4 mt-4">
+          <div class="icon-box">
+            <i class="ri-base-station-line" style="color: #ff5828;"></i>
+            <h3><a href="">Peers</a></h3>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-4 mt-4">
+          <div class="icon-box">
+            <i class="ri-fingerprint-line" style="color: #29cc61;"></i>
+            <h3><a href="">Online Courses</a></h3>
+          </div>
+        </div> {% endcomment %}
+      </div>
+
+    </div>
+  </section><!-- End Features Section -->
+
+  <!-- ======= Popular Courses Section ======= -->
+  {% comment %} <section id="popular-courses" class="courses">
+    <div class="container" data-aos="fade-up">
+
+      <div class="section-title">
+        <h2>Countries</h2>
+        <p>Popular Countries</p>
+      </div>
+
+      <div class="row" data-aos="zoom-in" data-aos-delay="100">
+
+        <div class="col-lg-4 col-md-6 d-flex align-items-stretch mt-4 mt-md-0">
+          <div class="course-item">
+            <img src="{% static 'assets/img/usa.jpeg'%}" class="img-fluid" alt="...">
+            <div class="course-content">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>North American</h4>
+                <p class="price"></p>
+              </div>
+
+              <h3><a href="course-details.html">United States</a></h3>
+              <div class="trainer d-flex justify-content-between align-items-center">
+                <div class="trainer-rank d-flex align-items-center">
+                  <i class="bx bx-user"></i>&nbsp;35
+                  &nbsp;&nbsp;
+                  <i class="bx bx-heart"></i>&nbsp;42
+                </div>
+              </div>
+            </div>
+          </div>
+        </div> <!-- End Course Item-->
+        <div class="col-lg-4 col-md-6 d-flex align-items-stretch">
+          <div class="course-item">
+            <img src="{% static 'assets/img/london.jpeg' %}" class="img-fluid" alt="...">
+            <div class="course-content">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>European</h4>
+                <p class="price"></p>
+              </div>
+
+              <h3><a href="">United Kingdom</a></h3>
+
+              <div class="trainer d-flex justify-content-between align-items-center">
+                <div class="trainer-rank d-flex align-items-center">
+                  <i class="bx bx-user"></i>&nbsp;159
+                  &nbsp;&nbsp;
+                  <i class="bx bx-heart"></i>&nbsp;265
+                </div>
+              </div>
+            </div>
+          </div>
+        </div> <!-- End Course Item-->
+
+        <div class="col-lg-4 col-md-6 d-flex align-items-stretch mt-4 mt-lg-0">
+          <div class="course-item">
+            <img src="{% static 'assets/img/australia.jpeg'%}" class="img-fluid" alt="...">
+            <div class="course-content">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Australian</h4>
+                <p class="price"></p>
+              </div>
+
+              <h3><a href="">Australia</a></h3>
+              <div class="trainer d-flex justify-content-between align-items-center">
+                <div class="trainer-rank d-flex align-items-center">
+                  <i class="bx bx-user"></i>&nbsp;20
+                  &nbsp;&nbsp;
+                  <i class="bx bx-heart"></i>&nbsp;85
+                </div>
+              </div>
+            </div>
+          </div>
+        </div> <!-- End Course Item-->
+
+      </div>
+
+    </div>
+  </section><!-- End Popular Courses Section --> {% endcomment %}
+
+  <!-- ======= Trainers Section ======= -->
+  <section id="s-stories" class="s-stories">
+    <h3>Feedbacks</h3>
+    <section id="trainers" class="trainers">
+      <div class="container" data-aos="fade-up">
+
+        <div class="row" data-aos="zoom-in" data-aos-delay="100">
+          {% for feedback in all_feedbacks %}
+          <div class="col-lg-4 col-md-6 d-flex align-items-stretch">
+            <div class="member">
+              <img src="{{feedback.profile.photo.url}}" class="img-fluid" alt="" width="300px" height="400px"
+                style="object-fit: cover;">
+              <div class="member-content">
+                <h4>{{feedback.profile.user.first_name}} {{feedback.profile.user.last_name}}</h4>
+                {% if feedback.profile.highest_qualification %}
+                <span>{{feedback.profile.highest_qualification}}</span>
+
+                {% endif %}
+                <p>
+                  {{feedback.content}}
+
+                </p>
+                <div class="social">
+                  <a href=""><i class="bi bi-twitter"></i></a>
+                  <a href=""><i class="bi bi-facebook"></i></a>
+                  <a href=""><i class="bi bi-instagram"></i></a>
+                  <a href=""><i class="bi bi-linkedin"></i></a>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+
+        </div>
+
+      </div>
+    </section><!-- End Trainers Section -->
+
+</main><!-- End #main -->
+
+
+
+
+
+
+
+<script>
+  $(function () {
+    // Focus Styling
+    const $input = $('.styled-input.multi input');
+
+    $input.on('focus', function () {
+      $(this).parent().parent().addClass('active');
+    });
+    $input.on('focusout', function () {
+      $(this).parent().parent().removeClass('active');
+    });
+
+    // Set data attribute to use for styling label when not a required field
+    $('.styled-input.multi input').blur(function () {
+      if ($(this).val()) {
+        $(this).attr('filled', 'true');
+      } else {
+        $(this).attr('filled', 'false');
+      }
+    });
+  });
+</script>
+
+
+{% endblock body %}

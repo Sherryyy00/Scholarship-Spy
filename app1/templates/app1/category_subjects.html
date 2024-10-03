@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% if user.is_authenticated %}
+{% load static %}
+
+{% block custom_css_links %}
+<link href="{% static 'assets/css/profile_style.css' %}" rel="stylesheet">
+{% endblock custom_css_links %}
+
+{% block body %}
+
+<style>
+    .card-horizontal {
+        display: flex;
+        flex: 1 1 auto;
+    }
+
+    @media (max-width:786px) {
+        .card-horizontal {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+        }
+    }
+</style>
+
+
+<div class="main-content">
+
+    <!-- Header -->
+    <div class="header d-flex align-items-center" style="min-height: 180px;">
+        <span class="mask opacity-8"></span>
+    </div>
+    <!-- Page content -->
+    <div class="container-fluid mt-6">
+        <div class="row">
+            <div class="col-xl-10 order-xl-2">
+                <div class="card bg-secondary shadow">
+                    <div class="card-header bg-white border-0">
+                        <div class="row align-items-center">
+                            <div class="col-8">
+                                <h3 class="mb-0">Scholarship Results</h3>
+                                <h4>No. of results: {{number_of_scholarships}}</h4>
+                            </div>
+
+                        </div>
+                    </div>
+                    {% if scholarships %}
+                    <div class="container-fluid mb-5" id="schol_div">
+                        <div class="row">
+                            {% for scholarship in scholarships %}
+                            <div class="col-12 mt-3">
+                                <div class="card border">
+                                    <div class="card-horizontal">
+                                        <div class="img-square-wrapper">
+                                            {% if 'http' not in scholarship.image_link %}
+                                            <img class="" src="{% static 'assets/img/image_skipped.png' %}"
+                                                alt="Card image cap"
+                                                style="width: 300px;height:300px; object-fit: contain;">
+                                            {% else %}
+                                            <img class="" src="{{scholarship.image_link}}" alt="Card image cap"
+                                                style="width: 300px;height:300px; object-fit: contain;">
+
+                                            {% endif %}
+
+                                        </div>
+                                        <div class="card-body">
+                                            <h3 class="card-title"><a
+                                                    href="{% url 'scholarship_detail' scholarship.pk %}"
+                                                    target="_blank">{{scholarship.title}}</a></h3>
+                                            <small
+                                                class="card-text">{{scholarship.scholarship_details|truncatechars:200}}
+                                            </small><br>
+                                            <div class="my-3">
+                                                {% if scholarship.tution_structure %}
+                                                <span><strong><i class="bi bi-coin mx-2"></i>
+                                                        {{scholarship.tution_structure}}</strong></span><br>
+                                                {% endif %}
+
+                                                {% if scholarship.degree %}
+                                                <span><strong><i class="bi bi-mortarboard mx-2"></i>
+                                                        {{scholarship.degree}}</strong></span><br>
+                                                {% endif %}
+
+                                                {% if scholarship.subject %}
+                                                <span><strong><i class="bi bi-book mx-2"></i>
+                                                        {{scholarship.subject}}</strong></span><br>
+                                                {% endif %}
+
+                                                {% if scholarship.country %}
+                                                <span><strong><i class="bi bi-geo-alt mx-2"></i>
+                                                        {{scholarship.country}}</strong></span><br>
+                                                {% endif %}
+                                                {% if scholarship.apply_date %}
+                                                <span><strong><i class="bi bi-calendar-check mx-2"></i>
+                                                        {{scholarship.apply_date}}</strong></span>
+                                                {% endif %}
+
+                                            </div>
+                                            <div class="d-flex justify-content-end">
+                                                <a href="{% url 'scholarship_detail' scholarship.pk %}"
+                                                    class="btn btn-primary btn-sm" target="_blank">Learn
+                                                    More</a>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+
+
+
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-center mb-5">
+                        {% if scholarships.has_other_pages %}
+                        <div class="pagination">
+                            {% if scholarships.has_previous %}
+                            <div class="border mx-2 px-3 py-2 rounded shadow"><a
+                                    href="?page={{ scholarships.previous_page_number }}">&laquo;</a>
+                            </div>
+                            {% else %}
+                            <div class="disabled border mx-2 px-3 py-2 rounded shadow"><span>&laquo;</span></div>
+                            {% endif %}
+
+                            {% for i in scholarships.paginator.get_elided_page_range %}
+                            {% if scholarships.paginator.ELLIPSIS == i %}
+                            <div class="active border mx-2 px-3 py-2 rounded shadow"
+                                style="color: white;background-color: #5E72E4;">
+                                <span>{{ i }} <span class="sr-only"></span></span>
+                            </div>
+                            {% else %}
+                            <div class="border mx-2 px-3 py-2 rounded shadow"><a href="?page={{ i }}">
+                                    {{ i }}</a></div>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if scholarships.has_next %}
+                            <div class="border mx-2 px-3 py-2 rounded shadow"><a
+                                    href="?page={{ scholarships.next_page_number }}">&raquo;</a>
+                            </div>
+                            {% else %}
+                            <div class="disabled border mx-2 px-3 py-2 rounded shadow"><span>&raquo;</span></div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+
+
+
+                </div>
+            </div>
+
+
+
+
+
+
+        </div>
+    </div>
+</div>
+</div>
+
+
+<script>
+    let personal_statement_input = document.querySelector("#personal_statement")
+    let schol_div = document.querySelector("#schol_div")
+    if (personal_statement_input.value == "") {
+        schol_div.style.display = "none"
+    }
+
+</script>
+
+
+
+{% endblock %}
+
+
+
+{% else %}
+<h1> You are not logged in </h1>
+
+
+{% endif %}
