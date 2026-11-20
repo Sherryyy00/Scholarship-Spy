@@ -117,7 +117,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for scholarship in history.scholarship_set.all|slice:"5" %}
+                                {% for scholarship in history.top_scholarships|slice:"5" %}
                                 <tr>
                                     <th scope="row">{{scholarship.pk}}</th>
                                     <td><a href="{{scholarship.link}}" target="_blank">{{scholarship.title}}</a></td>

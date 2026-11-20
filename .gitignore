@@ -1,0 +1,26 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Django
+db.sqlite3
+collected_static/
+static/mediafiles/profile_pics/
+
+# Large ML / data files (download separately, see README)
+glove.*.txt
+Dataset/*.csv
+!Dataset/sample_scholarships.csv
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.ipynb_checkpoints/
