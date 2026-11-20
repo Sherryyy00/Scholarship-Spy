@@ -52,4 +52,11 @@ urlpatterns = [
     path("history/<int:pk>/delete/", views.delete_history, name="delete_history"),
     path("history/clear/", views.clear_history, name="clear_history"),
     path("feedback/", views.feedback, name="feedback"),
+
+    # Saved scholarships & application tracker
+    path("saved/<int:pk>/toggle/", views.toggle_saved, name="toggle_saved"),
+    path("applications/", views.my_applications, name="my_applications"),
+    path("applications/<int:pk>/update/", views.update_application, name="update_application"),
+    path("applications/<int:pk>/remove/", views.remove_application, name="remove_application"),
+    path("reminders/unsubscribe/<str:token>/", views.unsubscribe_reminders, name="unsubscribe_reminders"),
 ]

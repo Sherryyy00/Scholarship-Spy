@@ -12,7 +12,10 @@
         {% if field_of_interest %}<span class="chip"><i class="bi bi-book"></i>{{ field_of_interest }}</span>{% endif %}
         {% if degree %}<span class="chip"><i class="bi bi-mortarboard"></i>{{ degree }}</span>{% endif %}
       </div>
-      <a href="{% url 'scholarships' %}" class="small-link">Clear filters</a>
+      <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'scholarships' %}" class="small-link">Clear filters</a>
+        {% include "app1/_sort_toolbar.html" %}
+      </div>
     </div>
     {% for scholarship in scholarships %}
       {% include "app1/_scholarship_card.html" %}

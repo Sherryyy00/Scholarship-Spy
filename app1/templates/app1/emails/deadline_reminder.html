@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<body style="margin:0;padding:0;background:#F7F8FA;font-family:Inter,Segoe UI,Arial,sans-serif;color:#1F2933;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F7F8FA;padding:24px 0;">
+    <tr><td align="center">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border:1px solid #E5E9EE;border-radius:14px;">
+        <tr><td style="padding:24px 28px 8px;font-size:20px;font-weight:700;color:#1F3A4D;">Scholarship <span style="color:#D99A2B;">Spy</span></td></tr>
+        <tr><td style="padding:8px 28px 4px;font-size:15px;">
+          Hi {{ user.first_name|default:user.username }},<br>
+          {% if entries|length == 1 %}a scholarship you saved is closing soon.{% else %}some scholarships you saved are closing soon.{% endif %}
+        </td></tr>
+        {% for e in entries %}
+        <tr><td style="padding:12px 28px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E5E9EE;border-radius:10px;">
+            <tr><td style="padding:14px 16px;">
+              <a href="{{ e.url }}" style="font-size:15px;font-weight:600;color:#1F2933;text-decoration:none;">{{ e.title }}</a><br>
+              <span style="display:inline-block;margin-top:6px;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600;{% if e.days <= 3 %}background:#FEECE6;color:#B42318;{% else %}background:#FFF4DE;color:#93600B;{% endif %}">
+                {% if e.days == 0 %}Closes today{% else %}Closes in {{ e.days }} day{{ e.days|pluralize }}{% endif %}
+              </span>
+              <span style="font-size:12px;color:#6B7785;"> {{ e.deadline|date:"j F Y" }}{% if e.estimated %} (estimated){% endif %} · {{ e.status }}</span>
+              {% if e.official_url %}<br><a href="{{ e.official_url }}" style="display:inline-block;margin-top:10px;font-size:13px;font-weight:600;color:#31526B;">Apply on the official website →</a>{% endif %}
+            </td></tr>
+          </table>
+        </td></tr>
+        {% endfor %}
+        <tr><td style="padding:8px 28px 24px;">
+          <a href="{{ tracker_url }}" style="display:inline-block;background:#31526B;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 18px;border-radius:10px;">Update my applications</a>
+          <p style="font-size:12px;color:#6B7785;margin:16px 0 0;">Always confirm the deadline on the official website.</p>
+        </td></tr>
+      </table>
+      <p style="font-size:12px;color:#6B7785;margin:14px 0 0;">You're getting this because you saved these scholarships and turned on reminders.
+        <a href="{{ unsubscribe_url }}" style="color:#6B7785;">Unsubscribe</a></p>
+    </td></tr>
+  </table>
+</body>
+</html>

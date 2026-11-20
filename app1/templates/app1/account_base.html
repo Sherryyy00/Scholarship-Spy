@@ -21,6 +21,7 @@
           <nav class="account-nav" aria-label="Account">
             <a href="{% url 'userprofile' %}" class="{% if current == 'userprofile' or current == 'userprofileedit' %}active{% endif %}"><i class="bi bi-person"></i> My profile</a>
             <a href="{% url 'my_recommendations' %}" class="{% if current == 'my_recommendations' or current == 'recommendation_results' %}active{% endif %}"><i class="bi bi-stars"></i> Recommendations</a>
+            <a href="{% url 'my_applications' %}" class="{% if current == 'my_applications' %}active{% endif %}"><i class="bi bi-bookmark"></i> My applications</a>
             <a href="{% url 'add_field_of_interest' %}" class="{% if current == 'add_field_of_interest' %}active{% endif %}"><i class="bi bi-bookmark-heart"></i> Interests</a>
             <a href="{% url 'my_history' %}" class="{% if current == 'my_history' %}active{% endif %}"><i class="bi bi-clock-history"></i> History</a>
             <a href="{% url 'feedback' %}" class="{% if current == 'feedback' %}active{% endif %}"><i class="bi bi-chat-left-text"></i> Feedback</a>

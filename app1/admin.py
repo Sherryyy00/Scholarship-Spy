@@ -2,16 +2,17 @@ from django.contrib import admin
 
 from .models import (
     Country, Feedback, FieldOfInterest, History, Institute, Profile, Program,
-    Recommendation, Scholarship, ScrapeRun, TypeOfDegree,
+    Recommendation, SavedScholarship, Scholarship, ScrapeRun, TypeOfDegree,
 )
 
 
 @admin.register(Scholarship)
 class ScholarshipAdmin(admin.ModelAdmin):
-    list_display = ("title", "university_name", "degree", "country", "source", "is_active", "last_seen_at")
+    list_display = ("title", "university_name", "degree", "country", "deadline", "source", "is_active")
     list_filter = ("is_active", "source", "degree", "country")
     search_fields = ("title", "university_name", "subject", "scholarship_details")
-    readonly_fields = ("source", "source_id", "source_url", "attribution", "last_seen_at", "created_at", "updated_at")
+    readonly_fields = ("source", "source_id", "source_url", "attribution", "last_seen_at", "created_at", "updated_at",
+                       "deadline", "deadline_estimated")
     actions = ("mark_active", "mark_inactive")
 
     @admin.action(description="Show on site")
@@ -67,3 +68,10 @@ class FeedbackAdmin(admin.ModelAdmin):
 
 
 admin.site.register([Country, FieldOfInterest, Institute, Program, TypeOfDegree])
+
+
+@admin.register(SavedScholarship)
+class SavedScholarshipAdmin(admin.ModelAdmin):
+    list_display = ("profile", "scholarship", "status", "updated_at", "reminded_14_for", "reminded_3_for")
+    list_filter = ("status",)
+    raw_id_fields = ("profile", "scholarship")

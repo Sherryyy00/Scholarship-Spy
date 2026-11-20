@@ -8,12 +8,14 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
+from django.core import signing
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, F, Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -24,7 +26,7 @@ from django.views.decorators.http import require_POST
 from . import recommender
 from .models import (
     Country, Feedback, FieldOfInterest, History, Program, Recommendation,
-    Scholarship, TypeOfDegree,
+    SavedScholarship, Scholarship, TypeOfDegree,
 )
 from .uploads import extract_cv_text, process_profile_photo, suggested_degree
 from .utils import send_email_token
@@ -65,6 +67,21 @@ def site_subjects():
 
 def site_degree_types():
     return TypeOfDegree.objects.filter(profile__isnull=True).values("name").distinct().order_by("name")
+
+
+SORT_OPTIONS = [("", "Relevance / A–Z"), ("deadline", "Closing soon"), ("newest", "Recently added")]
+
+
+def apply_sort(request, queryset):
+    """Sort a scholarship queryset from ?sort=. 'Closing soon' puts open, dated listings first."""
+    sort = request.GET.get("sort", "")
+    if sort == "deadline":
+        today = timezone.localdate()
+        return queryset.filter(Q(deadline__gte=today) | Q(deadline__isnull=True)).order_by(
+            F("deadline").asc(nulls_last=True), "title"), sort
+    if sort == "newest":
+        return queryset.order_by("-created_at"), sort
+    return queryset, ""
 
 
 def search_dropdowns():
@@ -116,13 +133,17 @@ def search_results(request):
     if not filters:
         return redirect("home")
 
-    results = Scholarship.objects.filter(**filters)
+    results, sort = apply_sort(request, Scholarship.objects.filter(**filters))
+    filter_qs = {k: v for k, v in params.items() if v}
     context = {
         **params,
         **search_dropdowns(),
         "scholarships": paginate(request, results),
         "number_of_scholarships": results.count(),
-        "qs": urlencode({k: v for k, v in params.items() if v}),
+        "sort": sort,
+        "sort_options": SORT_OPTIONS,
+        "filter_fields": filter_qs,
+        "qs": urlencode({**filter_qs, **({"sort": sort} if sort else {})}),
     }
     return render(request, "app1/scholarship_results.html", context)
 
@@ -143,13 +164,16 @@ def subjects(request):
 
 
 def _category(request, template, heading, preset, **lookup):
-    results = Scholarship.objects.filter(**lookup)
+    results, sort = apply_sort(request, Scholarship.objects.filter(**lookup))
     return render(request, template, {
         **search_dropdowns(),
         **preset,
         "heading": heading,
         "scholarships": paginate(request, results),
         "number_of_scholarships": results.count(),
+        "sort": sort,
+        "sort_options": SORT_OPTIONS,
+        "qs": urlencode({"sort": sort}) if sort else "",
     })
 
 
@@ -177,9 +201,13 @@ def scholarshipdegree3(request):
 
 
 def scholarshipdata(request):
+    results, sort = apply_sort(request, Scholarship.objects.all())
     return render(request, "app1/events.html", {
         **search_dropdowns(),
-        "scholarships": paginate(request, Scholarship.objects.all()),
+        "scholarships": paginate(request, results),
+        "sort": sort,
+        "sort_options": SORT_OPTIONS,
+        "qs": urlencode({"sort": sort}) if sort else "",
     })
 
 
@@ -479,6 +507,11 @@ def showprofile(request):
         "current_program_list": profile.program_set.order_by("-timestamp"),
         "recent_history": profile.history_set.all()[:3],
         "history_count": profile.history_set.count(),
+        "upcoming": profile.saved.select_related("scholarship").filter(
+            status__in=SavedScholarship.REMIND_STATUSES,
+            scholarship__deadline__gte=timezone.localdate(),
+        ).order_by("scholarship__deadline")[:5],
+        "saved_count": profile.saved.count(),
     })
 
 
@@ -511,6 +544,7 @@ def showformdata(request):
         for field in ("highest_qualification", "nationality", "cgpa", "age", "dob"):
             if field in data:
                 setattr(profile, field, data[field])
+        profile.email_reminders = request.POST.get("email_reminders") == "on"
         if photo is not None:
             old = profile.photo.name
             profile.photo.save(photo.name, photo, save=False)
@@ -772,3 +806,104 @@ def delete_account(request):
         messages.success(request, "Your account and all your data have been deleted.")
         return redirect("home")
     return render(request, "app1/delete_account.html")
+
+
+# ---------- saved scholarships & application tracker ----------
+
+def _wants_json(request):
+    return request.headers.get("x-requested-with") == "fetch" or "application/json" in request.headers.get("accept", "")
+
+
+def _safe_next(request, fallback):
+    nxt = request.POST.get("next") or ""
+    if nxt and url_has_allowed_host_and_scheme(nxt, {request.get_host()}, request.is_secure()):
+        return nxt
+    return fallback
+
+
+@login_required
+@require_POST
+def toggle_saved(request, pk):
+    """Save or unsave a scholarship. Works as a normal form post or via fetch() (returns JSON)."""
+    scholarship = get_object_or_404(Scholarship.objects, pk=pk)
+    profile = request.user.profile
+    existing = SavedScholarship.objects.filter(profile=profile, scholarship=scholarship).first()
+    if existing:
+        existing.delete()
+        saved = False
+    else:
+        SavedScholarship.objects.create(profile=profile, scholarship=scholarship)
+        saved = True
+    if _wants_json(request):
+        return JsonResponse({"saved": saved, "count": profile.saved.count()})
+    messages.success(request, f"Saved “{scholarship.title}”." if saved else f"Removed “{scholarship.title}”.")
+    return redirect(_safe_next(request, reverse("scholarship_detail", args=[pk])))
+
+
+@login_required
+def my_applications(request):
+    saved = (
+        request.user.profile.saved.select_related("scholarship")
+        .order_by(F("scholarship__deadline").asc(nulls_last=True), "-created_at")
+    )
+    columns = [
+        {"key": key, "label": label, "items": [s for s in saved if s.status == key]}
+        for key, label in SavedScholarship.STATUS_CHOICES
+    ]
+    return render(request, "app1/applications.html", {
+        "columns": columns,
+        "total": len(saved),
+        "status_choices": SavedScholarship.STATUS_CHOICES,
+    })
+
+
+@login_required
+@require_POST
+def update_application(request, pk):
+    item = get_object_or_404(SavedScholarship, pk=pk, profile=request.user.profile)
+    fields = []
+    status = request.POST.get("status")
+    if status is not None:
+        if status not in dict(SavedScholarship.STATUS_CHOICES):
+            return JsonResponse({"error": "Unknown status"}, status=400) if _wants_json(request) else redirect("my_applications")
+        item.status = status
+        fields.append("status")
+    if "notes" in request.POST:
+        item.notes = request.POST["notes"].strip()[:2000]
+        fields.append("notes")
+    if fields:
+        item.save(update_fields=fields + ["updated_at"])
+    if _wants_json(request):
+        return JsonResponse({"ok": True, "status": item.status})
+    messages.success(request, "Application updated.")
+    return redirect("my_applications")
+
+
+@login_required
+@require_POST
+def remove_application(request, pk):
+    get_object_or_404(SavedScholarship, pk=pk, profile=request.user.profile).delete()
+    messages.success(request, "Removed from your applications.")
+    return redirect("my_applications")
+
+
+# ---------- email reminders: one-click unsubscribe ----------
+
+UNSUBSCRIBE_SALT = "reminders-unsubscribe"
+
+
+def unsubscribe_token(user):
+    return signing.dumps(user.pk, salt=UNSUBSCRIBE_SALT)
+
+
+def unsubscribe_reminders(request, token):
+    """Linked from every reminder email; works without logging in."""
+    try:
+        user_pk = signing.loads(token, salt=UNSUBSCRIBE_SALT, max_age=60 * 60 * 24 * 365)
+    except signing.BadSignature:
+        messages.error(request, "That unsubscribe link isn't valid.")
+        return redirect("home")
+    from .models import Profile
+
+    Profile.objects.filter(user_id=user_pk).update(email_reminders=False)
+    return render(request, "app1/unsubscribed.html")

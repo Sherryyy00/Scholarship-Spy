@@ -9,13 +9,18 @@
   <div class="col-lg-8">
     <article class="panel detail-panel">
       <img class="detail-cover" src="{% scholarship_image scholarship %}" alt="">
+      <div class="detail-actions">
+        {% deadline_badge scholarship %}
+        {% include "app1/_save_button.html" %}
+      </div>
       <dl class="detail-grid detail-facts">
         {% if scholarship.degree %}<div><dt>Degree</dt><dd>{{ scholarship.degree }}</dd></div>{% endif %}
         {% if scholarship.country %}<div><dt>Destination</dt><dd>{{ scholarship.country }}</dd></div>{% endif %}
         {% if scholarship.tution_structure %}<div><dt>Funding</dt><dd>{{ scholarship.tution_structure }}</dd></div>{% endif %}
         {% if scholarship.subject %}<div><dt>Subject</dt><dd>{{ scholarship.subject }}</dd></div>{% endif %}
         {% if scholarship.eligibility %}<div><dt>Who can apply</dt><dd>{{ scholarship.eligibility }}</dd></div>{% endif %}
-        {% if scholarship.apply_date %}<div><dt>Deadline</dt><dd>{{ scholarship.apply_date }}</dd></div>{% endif %}
+        {% if scholarship.deadline %}<div><dt>Deadline</dt><dd>{{ scholarship.deadline|date:"j F Y" }}{% if scholarship.deadline_estimated %} <span class="text-muted">(estimated)</span>{% endif %}</dd></div>
+        {% elif scholarship.apply_date %}<div><dt>Deadline</dt><dd>{{ scholarship.apply_date }}</dd></div>{% endif %}
       </dl>
       {% if scholarship.scholarship_details %}
       <h2 class="panel-title mt-4">About this scholarship</h2>

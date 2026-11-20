@@ -1,0 +1,75 @@
+{% extends "app1/account_base.html" %}
+{% load scholarship_tags %}
+{% block title %}My applications | Scholarship Spy{% endblock %}
+{% block heading %}My applications{% endblock %}
+{% block subheading %}Track every scholarship from first look to result. {% if user.profile.email_reminders %}We'll email you 14 and 3 days before a deadline.{% endif %}{% endblock %}
+{% block actions %}<a href="{% url 'scholarships' %}" class="btn btn-outline-brand"><i class="bi bi-search"></i> Find more</a>{% endblock %}
+
+{% block account %}
+{% if total %}
+<div class="board">
+  {% for col in columns %}
+  <section class="board-col" aria-labelledby="col-{{ col.key }}">
+    <header class="board-col-head">
+      <h2 id="col-{{ col.key }}"><span class="status-dot status-{{ col.key }}"></span>{{ col.label }}</h2>
+      <span class="board-count">{{ col.items|length }}</span>
+    </header>
+    {% for item in col.items %}
+    {% with s=item.scholarship %}
+    <article class="track-card">
+      <a href="{% url 'scholarship_detail' s.pk %}" class="track-title">{{ s.title }}</a>
+      <div class="track-meta">{{ s.degree }}{% if s.degree and s.country %} · {% endif %}{{ s.country }}</div>
+      {% deadline_badge s %}
+      <form method="post" action="{% url 'update_application' item.pk %}" class="track-status">
+        {% csrf_token %}
+        <label class="visually-hidden" for="status-{{ item.pk }}">Status</label>
+        <select name="status" id="status-{{ item.pk }}" class="form-select form-select-sm js-autosave">
+          {% for value, label in status_choices %}<option value="{{ value }}" {% if value == item.status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <noscript><button class="btn btn-sm btn-outline-brand mt-2">Update</button></noscript>
+      </form>
+      <details class="track-notes">
+        <summary>{% if item.notes %}<i class="bi bi-sticky"></i> {{ item.notes|truncatechars:38 }}{% else %}Add notes{% endif %}</summary>
+        <form method="post" action="{% url 'update_application' item.pk %}">
+          {% csrf_token %}
+          <textarea name="notes" class="form-control form-control-sm" rows="3" maxlength="2000" placeholder="Referees, documents needed, login details for the portal…">{{ item.notes }}</textarea>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <button type="submit" class="btn btn-sm btn-outline-brand">Save notes</button>
+          </div>
+        </form>
+      </details>
+      <div class="track-foot">
+        {% if s.link %}<a href="{{ s.link }}" target="_blank" rel="noopener noreferrer" class="small-link">Official site <i class="bi bi-box-arrow-up-right"></i></a>{% endif %}
+        <form method="post" action="{% url 'remove_application' item.pk %}" class="ms-auto">
+          {% csrf_token %}
+          <button type="submit" class="icon-btn" aria-label="Remove {{ s.title }}"><i class="bi bi-trash"></i></button>
+        </form>
+      </div>
+    </article>
+    {% endwith %}
+    {% empty %}
+    <p class="board-empty">Nothing here yet</p>
+    {% endfor %}
+  </section>
+  {% endfor %}
+</div>
+{% else %}
+<div class="panel empty-state">
+  <i class="bi bi-bookmark"></i>
+  <p>Save scholarships with the <i class="bi bi-bookmark"></i> button and they'll appear here, so you can track deadlines and progress.</p>
+  <a href="{% url 'scholarships' %}" class="btn btn-brand btn-sm">Browse scholarships</a>
+</div>
+{% endif %}
+
+<script>
+// Change status without reloading: post with fetch, then move the card on next load.
+document.querySelectorAll('.js-autosave').forEach(function (select) {
+  select.addEventListener('change', function () {
+    var form = select.form;
+    fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'X-Requested-With': 'fetch' } })
+      .then(function (r) { if (!r.ok) throw r; window.location.reload(); })
+      .catch(function () { form.submit(); });
+  });
+});
+</script>
+{% endblock %}
