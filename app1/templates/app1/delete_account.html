@@ -1,0 +1,17 @@
+{% extends "app1/account_base.html" %}
+{% block title %}Delete account | Scholarship Spy{% endblock %}
+{% block heading %}Delete account{% endblock %}
+{% block subheading %}Permanently remove your account and everything linked to it.{% endblock %}
+
+{% block account %}
+<form method="post" class="panel danger-panel" style="max-width:560px">
+  {% csrf_token %}
+  <p>This deletes your profile, photo, interests, recommendation history and feedback. <strong>It can't be undone.</strong></p>
+  <label class="form-label" for="id_password">Enter your password to confirm</label>
+  <input type="password" name="password" id="id_password" class="form-control" autocomplete="current-password" required>
+  <div class="d-flex gap-2 mt-4">
+    <button type="submit" class="btn btn-danger">Delete my account</button>
+    <a href="{% url 'userprofile' %}" class="btn btn-outline-brand">Cancel</a>
+  </div>
+</form>
+{% endblock %}

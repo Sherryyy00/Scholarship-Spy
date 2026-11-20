@@ -1,190 +1,39 @@
-{% extends 'base.html' %}
-{% if user.is_authenticated %}
-{% load static %}
+{% extends "app1/account_base.html" %}
+{% block title %}Feedback | Scholarship Spy{% endblock %}
+{% block heading %}Feedback{% endblock %}
+{% block subheading %}Tell us what works and what doesn't. Approved feedback may appear on the home page with your first name.{% endblock %}
 
-{% block custom_css_links %}
-<link href="{% static 'assets/css/profile_style.css' %}" rel="stylesheet">
-{% endblock custom_css_links %}
-
-{% block body %}
-<style>
-    .item {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        user-select: none;
-    }
-
-    .radio {
-        display: none;
-    }
-
-    .radio~span {
-        font-size: 1.4rem;
-        filter: grayscale(10);
-        cursor: pointer;
-        transition: 0.3s;
-    }
-
-    .radio:checked~span {
-        filter: grayscale(0);
-        font-size: 1.6rem;
-    }
-</style>
-
-<div class="main-content">
-
-    <!-- Header -->
-    <div class="header d-flex align-items-center" style="min-height: 180px;">
-        <span class="mask opacity-8"></span>
+{% block account %}
+<form method="post" class="panel" novalidate>
+  {% csrf_token %}
+  <fieldset>
+    <legend class="form-label">How was your experience?</legend>
+    <div class="rating">
+      <input type="radio" name="emoji" id="r4" value="4"><label for="r4"><span>😍</span>Great</label>
+      <input type="radio" name="emoji" id="r3" value="3"><label for="r3"><span>🙂</span>Good</label>
+      <input type="radio" name="emoji" id="r2" value="2"><label for="r2"><span>😐</span>Okay</label>
+      <input type="radio" name="emoji" id="r1" value="1"><label for="r1"><span>🙁</span>Poor</label>
     </div>
-    <!-- Page content -->
-    <div class="container-fluid mt-6">
-        <div class="row">
-            <div class="col-xl-4 order-xl-1 mb-5 mb-xl-0">
-                <div class="card card-profile shadow">
-                    <div class="row justify-content-center">
-                        <div class="col-lg-3 order-lg-2">
-                            <div class="card-profile-image">
-                                <a href="#">
-                                    <img src="{{user.profile.photo.url}}" class="rounded-circle" width="100px"
-                                        height="100px" style="object-fit: cover;">
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+  </fieldset>
+  <label class="form-label mt-3" for="id_feedback">Your message</label>
+  <textarea name="feedback" id="id_feedback" class="form-control" rows="4" maxlength="500" required
+            placeholder="What did you like? What could be better?"></textarea>
+  <small class="hint">Up to 500 characters.</small>
+  <div class="mt-3"><button type="submit" class="btn btn-brand">Send feedback</button></div>
+</form>
 
-                    <div class="card-body pt-5 pt-md-4">
-
-                        <div class="mt-2 pt-5">
-                            <div class="text-center">
-                                <h2 class="text-center pb-3">
-                                    {{ request.user.username.capitalize }}
-                                </h2>
-
-                            </div>
-
-                            <hr class="my-4">
-                            <div class="row">
-                                <a href="{% url 'userprofile' %}" class="col-md-12 py-2"><i
-                                        class="bi bi-person-fill mx-2"></i>My Profile</a>
-                                <a href="{% url 'my_recommendations' %}" class="col-md-12 py-2"><i
-                                        class="bi bi-file-text mx-2"></i>My
-                                    Recommendations</a>
-                                <a href="{% url 'feedback' %}" class="col-md-12 py-2"><i
-                                        class="bi bi-file-text mx-2"></i>Feedback</a>
-                                <a href="{% url 'my_history' %}" class="col-md-12 py-2"><i
-                                        class="bi bi-file-text mx-2"></i>History</a>
-                                <a href="{% url 'logout' %}" class="col-md-12 py-2"><i
-                                        class="bi bi-arrow-up-right mx-2"></i>Logout</a>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-8 order-xl-2">
-                <div class="">
-                    <div class="border-0">
-                        <!-- Form -->
-                        {{p_form.non_field_errors}}
-                        <form action="" method="POST" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            {% if messages %}
-                            {% for message in messages %}
-                            <div class="alert alert-{{message.tags}}"
-                                style="background-color: #5E72E4;padding: 15px 20px;margin-bottom: 20px;color: white;border-radius: 7px;">
-                                {{message}}
-                            </div>
-
-                            {% endfor %}
-                            {% endif %}
-                            {% block content %}{% endblock %}
-
-
-                            <div class="pl-lg-4">
-                                <div class="row">
-                                    <div class="col-lg-12">
-                                        <div class="p-4 py-5 text-muted" style="background-color: #31526B;">
-                                            <h3 class="text-white">Send us your feedback!</h3>
-                                            <span>Do you have a suggestion or found some bug?<br>let us know in the
-                                                field below.
-                                            </span>
-                                        </div>
-                                        <div class="form-group focused p-4 py-3 border bg-white">
-                                            <h3>How was your experience?</h3>
-                                            <div class="container d-flex">
-
-
-                                                <div class="item">
-                                                    <label for="1">
-                                                        <input class="radio" type="radio" name="emoji" id="1"
-                                                            value="🙁">
-                                                        <span>🙁</span>
-                                                    </label>
-                                                </div>
-
-                                                <div class="item">
-                                                    <label for="2">
-                                                        <input class="radio" type="radio" name="emoji" id="2"
-                                                            value="😶">
-                                                        <span>😶</span>
-                                                    </label>
-                                                </div>
-
-                                                <div class="item">
-                                                    <label for="3">
-                                                        <input class="radio" type="radio" name="emoji" id="3"
-                                                            value="😁">
-                                                        <span>😁</span>
-                                                    </label>
-                                                </div>
-
-                                                <div class="item">
-                                                    <label for="4">
-                                                        <input class="radio" type="radio" name="emoji" id="4"
-                                                            value="😍">
-                                                        <span>😍</span>
-                                                    </label>
-                                                </div>
-
-                                            </div>
-                                            <textarea class="form-control form-control-alternative border-0"
-                                                style="box-shadow: none;" id="feedback" rows="5" required
-                                                placeholder="Describe your experience here..."
-                                                name="feedback"></textarea>
-                                            <input type="submit" value="Send" class="btn btn-primary"
-                                                style="background-color: #31526B;">
-                                        </div>
-
-                                    </div>
-
-
-                                </div>
-                            </div>
-
-
-
-
-
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+{% if my_feedback %}
+<div class="panel">
+  <h2 class="panel-title">Your recent feedback</h2>
+  <ul class="item-list">
+    {% for f in my_feedback %}
+    <li>
+      <span>{{ f.content|truncatechars:90 }}</span>
+      {% if f.is_approved %}<span class="badge bg-success-subtle text-success">Published</span>
+      {% else %}<span class="badge bg-secondary-subtle text-secondary">Awaiting review</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
 </div>
-
-
-{% endblock %}
-
-
-
-{% else %}
-<h1> You are not logged in </h1>
-
-
 {% endif %}
+{% endblock %}
