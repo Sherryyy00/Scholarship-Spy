@@ -26,6 +26,22 @@ Scholarship Spy is a Django web app that helps students find scholarships. You c
 
   <p align="center"><img src="images/admin.jpeg" alt="Admin panel" width="50%"></p>
 
+## Deadlines and application tracker
+
+- **Real deadlines.** Free-text deadlines ("31 March", "March 31, 2027", "31/03/2027"...) are parsed into dates (`app1/deadlines.py`). Dates without a year are marked *estimated* and roll forward each year. Vague text like "varies by country" is left undated rather than guessed.
+- **Closing soon.** Every listing can be sorted by closing date, and cards show a coloured badge ("Closes in 9 days", "Closed").
+- **Save and track.** Bookmark any scholarship, then follow it on a board through *Interested → Preparing → Applied → Interview → Successful/Unsuccessful*, with private notes. Upcoming deadlines also appear on the profile page.
+- **Email reminders.** Users get one digest email 14 days and again 3 days before a saved scholarship closes, while it's still *Interested* or *Preparing*. Each reminder is sent only once per deadline. Every email has a one-click unsubscribe link, and reminders can also be turned off in the profile.
+
+Run reminders once a day:
+
+```bash
+python manage.py send_deadline_reminders            # sends emails
+python manage.py send_deadline_reminders --dry-run  # just counts
+```
+
+On Windows, use Task Scheduler to run `python manage.py send_deadline_reminders` daily. On a server, use cron, for example `30 8 * * * cd /path/to/app && python manage.py send_deadline_reminders`. Without SMTP settings, emails are printed to the console.
+
 ## Privacy and security
 
 - **CVs are never stored.** The text is extracted in memory, then emails, phone numbers and links are removed. Only that cleaned text is kept with your search, so the results can be refreshed later.
@@ -119,7 +135,7 @@ To keep the data fresh, run `python manage.py scrape` once a day. Use cron on a 
 python manage.py test app1
 ```
 
-There are 109 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
+There are 144 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
 
 ## Configuration
 
