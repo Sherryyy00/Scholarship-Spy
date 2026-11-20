@@ -1,0 +1,17 @@
+Hi {{ user.first_name|default:user.username }},
+
+{% if entries|length == 1 %}A scholarship you saved is closing soon:{% else %}Some scholarships you saved are closing soon:{% endif %}
+{% for e in entries %}
+- {{ e.title }}
+  {% if e.days == 0 %}Closes TODAY{% else %}Closes in {{ e.days }} day{{ e.days|pluralize }}{% endif %} ({{ e.deadline|date:"j F Y" }}{% if e.estimated %}, estimated{% endif %}) - status: {{ e.status }}
+  Details: {{ e.url }}{% if e.official_url %}
+  Apply: {{ e.official_url }}{% endif %}
+{% endfor %}
+Update your progress: {{ tracker_url }}
+
+Always confirm the deadline on the official website.
+
+--
+Scholarship Spy
+You're getting this because you saved these scholarships and turned on deadline reminders.
+Unsubscribe: {{ unsubscribe_url }}
