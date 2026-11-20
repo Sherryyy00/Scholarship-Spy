@@ -122,6 +122,7 @@ def search_results(request):
         **search_dropdowns(),
         "scholarships": paginate(request, results),
         "number_of_scholarships": results.count(),
+        "qs": urlencode({k: v for k, v in params.items() if v}),
     }
     return render(request, "app1/scholarship_results.html", context)
 
@@ -141,45 +142,55 @@ def subjects(request):
     return render(request, "app1/subjects.html", {"all_subjects": chunks})
 
 
-def _category(request, template, **lookup):
+def _category(request, template, heading, preset, **lookup):
     results = Scholarship.objects.filter(**lookup)
     return render(request, template, {
+        **search_dropdowns(),
+        **preset,
+        "heading": heading,
         "scholarships": paginate(request, results),
         "number_of_scholarships": results.count(),
     })
 
 
 def category_subjects(request, subject):
-    return _category(request, "app1/category_subjects.html", subject__icontains=subject)
+    return _category(request, "app1/category_subjects.html", subject, {"field_of_interest": subject},
+                     subject__icontains=subject)
 
 
 def category_degree(request, degree):
-    return _category(request, "app1/category_degree.html", degree__icontains=degree)
+    return _category(request, "app1/category_degree.html", degree, {"degree": degree},
+                     degree__icontains=degree)
 
 
-def _degree_list(request, template, context_name, degree):
-    scholarships = Scholarship.objects.filter(degree__icontains=degree)
-    return render(request, template, {context_name: scholarships})
-
-
+# Old degree-list URLs now point at the shared category pages.
 def scholarshipdegree1(request):
-    return _degree_list(request, "app1/phd-list.html", "scholarshipone", "phd")
+    return redirect("category_degree", degree="PhD")
 
 
 def scholarshipdegree2(request):
-    return _degree_list(request, "app1/bachelors-list.html", "scholarshiptwo", "bachelor")
+    return redirect("category_degree", degree="Bachelors")
 
 
 def scholarshipdegree3(request):
-    return _degree_list(request, "app1/masters-list.html", "scholarshipthree", "master")
+    return redirect("category_degree", degree="Masters")
 
 
 def scholarshipdata(request):
-    return render(request, "app1/events.html", {"scholarships": paginate(request, Scholarship.objects.all())})
+    return render(request, "app1/events.html", {
+        **search_dropdowns(),
+        "scholarships": paginate(request, Scholarship.objects.all()),
+    })
 
 
 def scholarship_detail(request, pk):
-    return render(request, "app1/scholarship_detail.html", {"scholarship": get_object_or_404(Scholarship.objects, pk=pk)})
+    scholarship = get_object_or_404(Scholarship.objects, pk=pk)
+    # "Similar scholarships": rank everything else against this listing's own text.
+    matches = recommender.recommend(scholarship.search_text(), top_n=5)
+    ids = [m.scholarship_id for m in matches if m.scholarship_id != scholarship.pk][:4]
+    by_id = Scholarship.objects.in_bulk(ids)
+    similar = [by_id[i] for i in ids if i in by_id]
+    return render(request, "app1/scholarship_detail.html", {"scholarship": scholarship, "similar": similar})
 
 
 def scholarshipdatadetial(request, id):
@@ -191,12 +202,25 @@ def base(request):
     return render(request, "app1/base.html")
 
 
+DEGREE_CARDS = [
+    ("Bachelors", "Bachelor", "bi-book", "Undergraduate study, usually three to four years. Funding often covers tuition."),
+    ("Masters", "Master", "bi-mortarboard", "One to two years of postgraduate study. The largest group of fully funded awards."),
+    ("PhD", "PhD", "bi-lightbulb", "Doctoral research, often with a monthly stipend as well as fees."),
+]
+
+
 def trainers(request):
-    return render(request, "app1/trainers.html")
+    """The Degrees page."""
+    live = Scholarship.objects.all()
+    degrees = [
+        {"name": name, "slug": name, "icon": icon, "blurb": blurb, "count": live.filter(degree__icontains=match).count()}
+        for name, match, icon, blurb in DEGREE_CARDS
+    ]
+    return render(request, "app1/trainers.html", {"degrees": degrees})
 
 
 def pricing(request):
-    return render(request, "app1/pricing.html")
+    return redirect("home")
 
 
 def events(request):
@@ -204,11 +228,11 @@ def events(request):
 
 
 def scholarship1(request):
-    return render(request, "app1/berlin-scholarship.html")
+    return redirect(f"{reverse('search_results')}?country=Germany")
 
 
 def scholarship2(request):
-    return render(request, "app1/canada-scholarship.html")
+    return redirect(f"{reverse('search_results')}?country=Canada")
 
 
 def about(request):

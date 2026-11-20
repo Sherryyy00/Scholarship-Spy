@@ -99,8 +99,13 @@ class SearchTests(SampleDataMixin, TestCase):
         self.assertEqual(r.status_code, 200)
 
     def test_degree_list_pages(self):
-        for name in ("scholarshipone", "scholarshiptwo", "scholarshipthree"):
-            self.assertEqual(self.client.get(reverse(name)).status_code, 200)
+        for name, degree in (("scholarshipone", "PhD"), ("scholarshiptwo", "Bachelors"), ("scholarshipthree", "Masters")):
+            self.assertRedirects(self.client.get(reverse(name)), reverse("category_degree", args=[degree]))
+
+    def test_degrees_page_counts(self):
+        r = self.client.get(reverse("trainers"))
+        counts = {d["name"]: d["count"] for d in r.context["degrees"]}
+        self.assertEqual(counts["Bachelors"], Scholarship.objects.filter(degree__icontains="bachelor").count())
 
     def test_legacy_search_redirects(self):
         r = self.client.get(reverse("search"), {"degree": "Masters", "query": "Canada"})
@@ -113,7 +118,7 @@ class PublicPagesTests(SampleDataMixin, TestCase):
         s = Scholarship.objects.first()
         urls = [
             reverse(n) for n in (
-                "home", "subjects", "about", "trainers", "pricing", "scholarships",
+                "home", "subjects", "about", "trainers", "scholarships",
                 "login", "Registration",
             )
         ] + [
