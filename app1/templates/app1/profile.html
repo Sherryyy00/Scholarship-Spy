@@ -10,7 +10,7 @@
   <dl class="detail-grid">
     <div><dt>First name</dt><dd>{{ user.first_name|default:"—" }}</dd></div>
     <div><dt>Last name</dt><dd>{{ user.last_name|default:"—" }}</dd></div>
-    <div><dt>Email</dt><dd>{{ user.email|default:"—" }}
+    <div class="span-wide"><dt>Email</dt><dd>{{ user.email|default:"—" }}
       {% if user.profile.is_verified %}<span class="badge bg-success-subtle text-success ms-1">Verified</span>
       {% else %}<span class="badge bg-warning-subtle text-warning-emphasis ms-1">Not verified</span>{% endif %}</dd></div>
     <div><dt>Date of birth</dt><dd>{{ user.profile.dob|date:"j M Y"|default:"—" }}</dd></div>
@@ -21,8 +21,8 @@
   </dl>
 </div>
 
-<div class="row g-4">
-  <div class="col-md-6">
+<div class="panel-grid">
+  <div>
     <div class="panel h-100">
       <div class="panel-head">
         <h2 class="panel-title">Interests</h2>
@@ -43,7 +43,7 @@
     </div>
   </div>
 
-  <div class="col-md-6">
+  <div>
     <div class="panel h-100">
       <div class="panel-head">
         <h2 class="panel-title">Current programme</h2>
