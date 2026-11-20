@@ -16,7 +16,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from app1 import recommender
-from app1.models import Country, FieldOfInterest, Scholarship, TypeOfDegree
+from app1.ingest import sync_lookups
+from app1.models import Scholarship
 
 # model field -> accepted CSV headers (lower-case)
 COLUMN_ALIASES = {
@@ -43,7 +44,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("csv_path", nargs="?", default="Dataset/sample_scholarships.csv")
-        parser.add_argument("--clear", action="store_true", help="Delete existing scholarships first.")
+        parser.add_argument("--clear", action="store_true", help="Delete scholarships previously imported from CSV first.")
 
     def handle(self, csv_path, clear, **options):
         path = Path(csv_path)
@@ -68,7 +69,7 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             if clear:
-                Scholarship.objects.all().delete()
+                Scholarship.all_objects.filter(source=Scholarship.SOURCE_CSV).delete()
             for row in rows:
                 data = {}
                 for field, column in mapping.items():
@@ -80,23 +81,15 @@ class Command(BaseCommand):
                 if not data.get("title"):
                     skipped += 1
                     continue
-                _, was_created = Scholarship.objects.update_or_create(
+                data.update(source=Scholarship.SOURCE_CSV, is_active=True)
+                _, was_created = Scholarship.all_objects.update_or_create(
                     title=data.pop("title"), link=data.pop("link", ""), defaults=data,
                 )
                 created += was_created
                 updated += not was_created
-            self._sync_lookups()
+            sync_lookups()
 
         recommender.invalidate()
         self.stdout.write(self.style.SUCCESS(
             f"Imported {created} new, updated {updated}, skipped {skipped} rows without a title."
         ))
-
-    def _sync_lookups(self):
-        """Keep the search dropdowns (countries, subjects, degrees) in step with the data."""
-        for name in Scholarship.objects.exclude(country="").values_list("country", flat=True).distinct():
-            Country.objects.get_or_create(name=name)
-        for model, field in ((FieldOfInterest, "subject"), (TypeOfDegree, "degree")):
-            values = Scholarship.objects.exclude(**{field: ""}).values_list(field, flat=True).distinct()
-            for name in values:
-                model.objects.get_or_create(name=name, profile=None)

@@ -1,0 +1,24 @@
+name: Scraper health check
+
+# Runs every enabled scraper once a day in dry-run mode (nothing is saved).
+# If a source changes its layout or goes down, this goes red and GitHub emails you,
+# so you can fix the parser before your live site's data goes stale.
+on:
+  schedule:
+    - cron: "17 6 * * *"   # 06:17 UTC daily
+  workflow_dispatch:
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_DEBUG: "True"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python manage.py migrate -v0
+      - run: python manage.py scrape --dry-run

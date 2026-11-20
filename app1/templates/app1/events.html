@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load scholarship_tags %}
 {% if user.is_authenticated %}
 {% load static %}
 
@@ -30,9 +31,7 @@
   <div class="breadcrumbs" data-aos="fade-in">
     <div class="container mt-5">
       <h2>Scholarships</h2>
-      <p class="mt-4">Scholarship is to be created not by compulsion, but by awakening a pure interest in knowledge.
-        ​​​​​The
-        one-stop integrated information can assist you in finding a variety of scholarships and grants. </p>
+      <p class="mt-3">Every scholarship we track, from official sources. Open one to see details, or use the search on the home page to narrow it down.</p>
     </div>
   </div>
 
@@ -69,19 +68,11 @@
                   <div class="card border">
                     <div class="card-horizontal">
                       <div class="img-square-wrapper">
-                        {% if 'http' not in scholarship.image_link %}
-                        <img class="" src="{% static 'assets/img/image_skipped.png' %}" alt="Card image cap"
-                          style="width: 300px;height:300px; object-fit: contain;">
-                        {% else %}
-                        <img class="" src="{{scholarship.image_link}}" alt="Card image cap"
-                          style="width: 300px;height:300px; object-fit: contain;">
-
-                        {% endif %}
+                        <img class="sch-thumb" src="{% scholarship_image scholarship %}" alt="{{ scholarship.subject|default:scholarship.title }}">
 
                       </div>
                       <div class="card-body">
-                        <h3 class="card-title"><a href="{% url 'scholarship_detail' scholarship.pk %}"
-                            target="_blank">{{scholarship.title}}</a></h3>
+                        <h3 class="card-title"><a href="{% url 'scholarship_detail' scholarship.pk %}">{{scholarship.title}}</a></h3>
                         <small class="card-text">{{scholarship.scholarship_details|truncatechars:200}}
                         </small><br>
                         <div class="my-3">
@@ -112,7 +103,7 @@
                         </div>
                         <div class="d-flex justify-content-end">
                           <a href="{% url 'scholarship_detail' scholarship.pk %}" class="btn btn-primary btn-sm"
-                            style="background-color: #31526B; color:white;" target="_blank">Learn
+                            style="background-color: #31526B; color:white;">Learn
                             More</a>
 
                         </div>

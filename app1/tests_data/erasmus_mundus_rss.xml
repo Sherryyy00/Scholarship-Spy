@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Test fixture reconstructed from the structure of https://www.eacea.ec.europa.eu/node/253/rss_en (Nov 2026). -->
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>European Education and Culture Executive Agency | Erasmus Mundus Catalogue</title>
+    <link>https://www.eacea.ec.europa.eu/scholarships/erasmus-mundus-catalogue_en</link>
+    <atom:link href="https://www.eacea.ec.europa.eu/node/253/rss_en" rel="self" type="application/rss+xml"/>
+    <description>Erasmus Mundus Catalogue</description>
+    <language>en</language>
+    <copyright>© European Union</copyright>
+    <item>
+      <title>Quantum Technologies and Engineering Erasmus Mundus Master Plus</title>
+      <atom:id>https://www.eacea.ec.europa.eu/node/1584</atom:id>
+      <link>https://www.quanteem.eu/</link>
+      <guid>https://www.quanteem.eu/</guid>
+      <description>&lt;p&gt;QuanTEEM plus - Project overview&lt;br&gt;&lt;a href="https://erasmus-plus.ec.europa.eu/projects/search/details/101325739"&gt;https://erasmus-plus.ec.europa.eu/projects/search/details/101325739&lt;/a&gt;&lt;/p&gt;</description>
+      <pubDate>Fri, 13 Nov 2026 15:29:13 +0100</pubDate>
+      <category domain="http://publications.europa.eu/resource/authority/corporate-body">European Education and Culture Executive Agency</category>
+      <category domain="Studies">QUANTIC</category>
+      <category domain="Studies">Physics (PHY)</category>
+      <category domain="Thematic global">Hard Science</category>
+      <category domain="ECTS Duration">24 months / 120 ECTS</category>
+      <category domain="Years for EMJMD">2026</category>
+      <category domain="EMJMD Universities">AARHUS UNIVERSITET</category>
+      <category domain="EMJMD Universities">UNIVERSITA DEGLI STUDI DI MILANO</category>
+      <category domain="EMJMD Universities">UNIVERSITE BOURGOGNE EUROPE</category>
+      <category domain="EMJMD Universities">RHEINLAND-PFALZISCHE TECHNISCHE UNIVERSITAT</category>
+      <category domain="EACEA catalogue">Eramus Mundus catalogue</category>
+      <category domain="http://data.europa.eu/uxp/det">education grant</category>
+      <category domain="http://data.europa.eu/uxp/det">student mobility</category>
+    </item>
+    <item>
+      <title>EU-CONEXUS Joint Master Programme in Marine Biotechnology: Learning Community</title>
+      <atom:id>https://www.eacea.ec.europa.eu/node/1583</atom:id>
+      <link>https://www.eu-conexus.eu/en/marine-biotechnology/</link>
+      <guid>https://www.eu-conexus.eu/en/marine-biotechnology/</guid>
+      <description>&lt;p&gt;JMPMB Community - Project overview&lt;br&gt;&lt;a href="https://erasmus-plus.ec.europa.eu/projects/search/details/101325655"&gt;link&lt;/a&gt;&lt;/p&gt;</description>
+      <pubDate>Fri, 13 Nov 2026 15:23:12 +0100</pubDate>
+      <category domain="Studies">WATER</category>
+      <category domain="Studies">Environmental and Geosciences (ENV)</category>
+      <category domain="Thematic global">Life Science</category>
+      <category domain="ECTS Duration">24 months / 120 ECTS</category>
+      <category domain="Years for EMJMD">2026</category>
+      <category domain="EMJMD Universities">LA ROCHELLE UNIVERSITE</category>
+      <category domain="EMJMD Universities">KLAIPEDOS UNIVERSITETAS</category>
+    </item>
+    <item>
+      <title>Erasmus Mundus Joint Master Degree in Advanced Microscopy with Artificial Intelligence</title>
+      <atom:id>https://www.eacea.ec.europa.eu/node/1582</atom:id>
+      <link>https://microscom.eu/</link>
+      <guid>https://microscom.eu/</guid>
+      <description>&lt;p&gt;MICROSCOM - Project overview&lt;/p&gt;</description>
+      <category domain="Studies">Computer Science (ICT)</category>
+      <category domain="Studies">Physics (PHY)</category>
+      <category domain="ECTS Duration">24 months / 120 ECTS</category>
+      <category domain="EMJMD Universities">UNIVERSITE DE BORDEAUX</category>
+    </item>
+    <item>
+      <title></title>
+      <link>https://broken.example/</link>
+    </item>
+  </channel>
+</rss>

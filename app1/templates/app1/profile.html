@@ -44,7 +44,7 @@
                 <a href="{% url 'userprofile' %}" class="col-md-12 py-2"><i class="bi bi-person-fill mx-2"></i>My
                   Profile</a>
                 <a href="{% url 'my_recommendations' %}" class="col-md-12 py-2"><i class="bi bi-file-text mx-2"></i>My
-                  Recommmendations</a>
+                  Recommendations</a>
                 <a href="{% url 'feedback' %}" class="col-md-12 py-2"><i class="bi bi-file-text mx-2"></i>Feedback</a>
                 <a href="{% url 'my_history' %}" class="col-md-12 py-2"><i class="bi bi-file-text mx-2"></i>History</a>
                 <a href="{% url 'logout' %}" class="col-md-12 py-2"><i class="bi bi-arrow-up-right mx-2"></i>Logout</a>
@@ -126,7 +126,7 @@
             </div>
 
             <hr class="my-3">
-            <a class="btn " href="{% url 'current_program'%}" target="_blank"
+            <a class="btn " href="{% url 'current_program'%}"
               style="background-color: #31526B; color:white;">Add Current Program</a>
             <hr class=" my-3">
             {% if current_program_list %}
@@ -149,7 +149,7 @@
 
             <hr class="my-3">
             <a class="btn btn-primary" href="{% url 'add_field_of_interest'%}"
-              style="background-color: #31526B; color:white;" target="_blank">Add Field of
+              style="background-color: #31526B; color:white;">Add Field of
               Interest</a>
 
             {% if field_of_interest_list %}

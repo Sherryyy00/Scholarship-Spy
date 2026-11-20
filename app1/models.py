@@ -76,7 +76,18 @@ class Country(models.Model):
         return self.name
 
 
+class ActiveScholarshipManager(models.Manager):
+    """Only listings that are still live at their source. Used by the public site and the recommender."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_active=True)
+
+
 class Scholarship(models.Model):
+    # Where a listing came from. "manual" = admin, "csv" = file import, anything else = a scraper name.
+    SOURCE_MANUAL = "manual"
+    SOURCE_CSV = "csv"
+
     title = models.CharField(max_length=300)
     link = models.URLField(max_length=500, blank=True, default="")
     image_link = models.URLField(max_length=500, blank=True, default="")
@@ -89,13 +100,33 @@ class Scholarship(models.Model):
     apply_date = models.CharField(max_length=200, blank=True, default="")
     scholarship_details = models.TextField(blank=True, default="")
     history = models.ManyToManyField(History, through="Recommendation", blank=True)
+
+    # Provenance and freshness
+    source = models.CharField(max_length=50, default=SOURCE_MANUAL, db_index=True)
+    source_id = models.CharField(max_length=300, blank=True, default="", help_text="Stable ID of the listing at its source")
+    source_url = models.URLField(max_length=500, blank=True, default="", help_text="Page the listing was collected from")
+    attribution = models.CharField(max_length=300, blank=True, default="")
+    last_seen_at = models.DateTimeField(null=True, blank=True, help_text="Last time a scraper found this listing")
+    is_active = models.BooleanField(default=True, db_index=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # First manager is the default (used by admin and imports), so it sees everything.
+    all_objects = models.Manager()
+    objects = ActiveScholarshipManager()
+
     class Meta:
         ordering = ("title",)
+        base_manager_name = "all_objects"
+        default_manager_name = "all_objects"
         constraints = [
             models.UniqueConstraint(fields=["title", "link"], name="unique_scholarship_title_link"),
+            models.UniqueConstraint(
+                fields=["source", "source_id"],
+                condition=~models.Q(source_id=""),
+                name="unique_scholarship_source_id",
+            ),
         ]
 
     def __str__(self):
@@ -110,6 +141,31 @@ class Scholarship(models.Model):
             self.eligibility, self.scholarship_details,
         ]
         return " ".join(p for p in parts if p)
+
+
+class ScrapeRun(models.Model):
+    """One run of one scraper, so you can see in the admin what was collected and when."""
+
+    STATUS_RUNNING = "running"
+    STATUS_SUCCESS = "success"
+    STATUS_FAILED = "failed"
+    STATUS_CHOICES = [(s, s.title()) for s in (STATUS_RUNNING, STATUS_SUCCESS, STATUS_FAILED)]
+
+    source = models.CharField(max_length=50, db_index=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_RUNNING)
+    found = models.PositiveIntegerField(default=0)
+    created = models.PositiveIntegerField(default=0)
+    updated = models.PositiveIntegerField(default=0)
+    deactivated = models.PositiveIntegerField(default=0)
+    error = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ("-started_at",)
+
+    def __str__(self):
+        return f"{self.source} @ {self.started_at:%Y-%m-%d %H:%M} ({self.status})"
 
 
 class Recommendation(models.Model):

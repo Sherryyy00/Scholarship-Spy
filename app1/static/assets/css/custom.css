@@ -1,0 +1,178 @@
+/* =========================================================
+   Scholarship Spy - design layer loaded after the template CSS.
+   One brand palette, consistent cards, and mobile fixes.
+   ========================================================= */
+
+:root {
+  --brand: #31526B;
+  --brand-dark: #243E52;
+  --brand-light: #E8EEF3;
+  --accent: #E0A83E;
+  --text: #2B3440;
+  --muted: #6B7785;
+  --radius: 12px;
+  --shadow: 0 6px 20px rgba(36, 62, 82, .08);
+  --shadow-hover: 0 12px 28px rgba(36, 62, 82, .16);
+}
+
+body { color: var(--text); }
+a { color: var(--brand); }
+a:hover { color: var(--brand-dark); }
+
+/* ---------- Buttons ---------- */
+.btn-brand, .btn-primary {
+  background: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: #fff !important;
+  border-radius: 50px;
+  padding: 8px 22px;
+  font-weight: 500;
+}
+.btn-brand:hover, .btn-primary:hover { background: var(--brand-dark) !important; border-color: var(--brand-dark) !important; }
+.btn-outline-brand {
+  border: 2px solid var(--brand);
+  color: var(--brand);
+  border-radius: 50px;
+  padding: 6px 20px;
+  font-weight: 500;
+}
+.btn-outline-brand:hover { background: var(--brand); color: #fff; }
+.btn:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Header ---------- */
+#header .logo a { color: var(--brand); letter-spacing: .5px; }
+#header .logo b { color: var(--accent); font-weight: inherit; }
+.navbar a.active, .navbar a:hover { color: var(--brand) !important; }
+.navbar a.active { font-weight: 600; }
+.header-avatar { width: 36px; height: 36px; object-fit: cover; border: 2px solid var(--brand-light); }
+.mobile-nav-toggle { color: var(--brand); }
+@media (max-width: 575px) {
+  #header .logo { font-size: 22px; }
+}
+
+/* ---------- Section titles ---------- */
+.section-title h2 { color: var(--muted); }
+.section-title h2::after { background: var(--accent); }
+.section-title p { color: var(--brand); }
+.eyebrow {
+  display: inline-block; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 8px;
+}
+.about .content h3 { color: var(--brand-dark); font-weight: 700; }
+.about .content .lead-text { font-size: 17px; color: var(--muted); }
+.about .content ul i { color: var(--brand); }
+
+/* ---------- Live numbers ---------- */
+.counts .count {
+  display: block; font-size: 44px; font-weight: 700; color: var(--brand); line-height: 1.1;
+}
+.counts p { color: var(--muted); font-weight: 500; margin: 6px 0 0; }
+
+/* ---------- How it works ---------- */
+.how-it-works { padding: 60px 0; }
+.step-card {
+  position: relative; background: #fff; border-radius: var(--radius); padding: 32px 26px;
+  box-shadow: var(--shadow); transition: transform .2s, box-shadow .2s;
+}
+.step-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+.step-card i { font-size: 38px; color: var(--brand); }
+.step-card h4 { margin: 14px 0 8px; font-weight: 600; color: var(--brand-dark); }
+.step-card p { color: var(--muted); }
+.step-no {
+  position: absolute; top: 18px; right: 22px; font-size: 40px; font-weight: 800; color: var(--brand-light);
+}
+.step-link { font-weight: 600; }
+
+/* ---------- Destinations ---------- */
+.destinations { padding: 60px 0; }
+.destination-card {
+  position: relative; display: block; overflow: hidden; border-radius: var(--radius);
+  aspect-ratio: 4 / 3; box-shadow: var(--shadow);
+}
+.destination-card img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
+.destination-card:hover img { transform: scale(1.06); }
+.destination-overlay {
+  position: absolute; inset: auto 0 0 0; padding: 18px 20px; color: #fff;
+  background: linear-gradient(transparent, rgba(20, 35, 47, .85));
+}
+.destination-overlay h4 { margin: 0; font-weight: 600; color: #fff; }
+.destination-overlay span { font-size: 14px; opacity: .9; }
+
+/* ---------- Feedback ---------- */
+.feedback { padding: 60px 0; }
+.quote-card {
+  display: flex; flex-direction: column; background: #fff; border-radius: var(--radius);
+  padding: 28px; box-shadow: var(--shadow);
+}
+.quote-icon { font-size: 32px; color: var(--accent); }
+.quote-card p { font-size: 16px; font-style: italic; margin: 10px 0 20px; }
+.quote-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; }
+
+.sources-strip { background: var(--brand-light); padding: 22px 0; color: var(--brand-dark); font-size: 14px; }
+
+/* ---------- Scholarship cards (lists, results, recommendations, history) ---------- */
+.card { border-radius: var(--radius) !important; border-color: #E3E8ED !important; }
+.card.border { transition: box-shadow .2s, transform .2s; }
+.card.border:hover { box-shadow: var(--shadow-hover); }
+.card-horizontal { display: flex; flex: 1 1 auto; }
+.img-square-wrapper { flex: 0 0 auto; }
+.sch-thumb {
+  width: 260px; height: 100%; min-height: 220px; max-height: 300px; object-fit: cover; display: block;
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+.card-title a, .card-body h3 a, .card-body h2 a { color: var(--brand-dark) !important; text-decoration: none; }
+.card-title a:hover { color: var(--brand) !important; text-decoration: underline; }
+@media (max-width: 767px) {
+  .card-horizontal { flex-direction: column; }
+  .sch-thumb { width: 100%; height: 180px; min-height: 0; border-radius: var(--radius) var(--radius) 0 0; }
+}
+
+/* ---------- Pagination ---------- */
+.pagination .page-link { color: var(--brand); border-radius: 8px !important; margin: 0 3px; }
+.pagination .page-item.active .page-link,
+.pagination .page-link.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+/* ---------- Profile sidebar ---------- */
+.list-group-item a, .sidebar a { color: var(--brand); }
+
+/* ---------- Footer ---------- */
+#footer { background: #F4F7F9; }
+#footer .footer-top { padding: 50px 0 20px; background: transparent; }
+.footer-brand { color: var(--brand); font-weight: 700; font-size: 24px; }
+.footer-brand b { color: var(--accent); font-weight: inherit; }
+.footer-about { color: var(--muted); font-size: 14px; max-width: 340px; }
+#footer .footer-links ul a { color: var(--text); }
+#footer .footer-links ul a:hover { color: var(--brand); }
+#footer .footer-links ul i { color: var(--accent); }
+.footer-bottom { border-top: 1px solid #E1E7EC; color: var(--muted); }
+.footer-github { color: var(--brand); font-weight: 500; }
+.footer-github i { font-size: 18px; vertical-align: -3px; }
+
+/* ---------- Messages ---------- */
+.alert { border-radius: var(--radius); }
+#footer a, .footer-links a, .step-link, .destination-card { text-decoration: none; }
+
+/* Page banners sit below the fixed header (taller on small screens) */
+.breadcrumbs { margin-top: 70px; }
+@media (max-width: 991px) { .breadcrumbs { margin-top: 78px; } .breadcrumbs .container.mt-5 { margin-top: 1.5rem !important; } }
+
+/* ---------- Login / registration ---------- */
+.auth-page { padding: 120px 0 70px; background: #F4F7F9; min-height: 80vh; }
+.auth-card {
+  display: flex; max-width: 900px; margin: 0 auto; background: #fff; border-radius: 16px;
+  overflow: hidden; box-shadow: var(--shadow-hover);
+}
+.auth-side {
+  flex: 0 0 38%; flex-direction: column; justify-content: center; align-items: flex-start; gap: 6px;
+  padding: 48px 40px; color: #fff; background: linear-gradient(135deg, var(--brand-dark), #4F7C9C);
+}
+.auth-side h3 { color: #fff; font-weight: 700; }
+.auth-side p { opacity: .9; margin-bottom: 16px; }
+.auth-form { flex: 1; padding: 48px 44px; }
+.auth-form h2 { color: var(--brand-dark); font-weight: 700; margin-bottom: 4px; }
+.auth-form .form-control:focus { border-color: var(--brand); box-shadow: 0 0 0 .2rem rgba(49, 82, 107, .15); }
+.auth-form .input-group-text { background: var(--brand-light); color: var(--brand); border-color: #dee2e6; }
+@media (max-width: 767px) {
+  .auth-page { padding: 100px 0 40px; }
+  .auth-form { padding: 32px 22px; }
+}
