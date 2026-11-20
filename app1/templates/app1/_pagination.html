@@ -1,0 +1,20 @@
+{# Pagination for a Page object `page`. `qs` is the current query string without "page" (keeps search filters). #}
+{% if page.has_other_pages %}
+<nav aria-label="Pages" class="mt-4">
+  <ul class="pagination justify-content-center flex-wrap">
+    {% if page.has_previous %}
+    <li class="page-item"><a class="page-link" href="?{% if qs %}{{ qs }}&{% endif %}page={{ page.previous_page_number }}" aria-label="Previous"><i class="bi bi-chevron-left"></i></a></li>
+    {% endif %}
+    {% for n in page.paginator.get_elided_page_range %}
+      {% if n == page.paginator.ELLIPSIS %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% else %}
+      <li class="page-item {% if n == page.number %}active{% endif %}"><a class="page-link" href="?{% if qs %}{{ qs }}&{% endif %}page={{ n }}" {% if n == page.number %}aria-current="page"{% endif %}>{{ n }}</a></li>
+      {% endif %}
+    {% endfor %}
+    {% if page.has_next %}
+    <li class="page-item"><a class="page-link" href="?{% if qs %}{{ qs }}&{% endif %}page={{ page.next_page_number }}" aria-label="Next"><i class="bi bi-chevron-right"></i></a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}

@@ -1,0 +1,85 @@
+{% extends "app1/account_base.html" %}
+{% load scholarship_tags %}
+{% block title %}Your matches | Scholarship Spy{% endblock %}
+{% block heading %}Your matches{% endblock %}
+{% block subheading %}{{ total }} scholarship{{ total|pluralize }}, best match first.{% endblock %}
+{% block actions %}
+<form method="post" action="{% url 'rerun_recommendations' history.pk %}">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-outline-brand" title="Re-rank with the latest scholarships"><i class="bi bi-arrow-repeat me-1"></i> Refresh</button>
+</form>
+<a href="{% url 'my_recommendations' %}" class="btn btn-brand"><i class="bi bi-plus-lg me-1"></i> New search</a>
+{% endblock %}
+
+{% block account %}
+<div class="panel query-summary">
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    {% if history.input_type == 'cv' or history.input_type == 'both' %}
+    <span class="chip"><i class="bi bi-file-earmark-person me-1"></i> {{ history.cv_filename }}</span>
+    {% endif %}
+    {% if history.target_degree %}<span class="chip"><i class="bi bi-mortarboard me-1"></i> {{ history.target_degree }}</span>{% endif %}
+    {% if history.target_country %}<span class="chip"><i class="bi bi-geo-alt me-1"></i> {{ history.target_country }}</span>{% endif %}
+    <small class="text-muted ms-auto">{{ history.created_at|date:"j M Y, H:i" }}</small>
+  </div>
+  {% if history.personal_statement %}
+  <details class="mt-3">
+    <summary>Your statement</summary>
+    <p class="mt-2 mb-0 statement-text">{{ history.personal_statement|linebreaksbr }}</p>
+  </details>
+  {% endif %}
+  {% if suggested_degree %}
+  <p class="hint mt-3 mb-0"><i class="bi bi-info-circle"></i> From what you shared, we gave a small boost to <strong>{{ suggested_degree }}</strong> scholarships. Choose a degree level on a new search to filter strictly.</p>
+  {% endif %}
+</div>
+
+{% if recommendations %}
+  {% for rec in recommendations %}
+  {% with s=rec.scholarship %}
+  <article class="match-card">
+    <img class="match-thumb" src="{% scholarship_image s %}" alt="">
+    <div class="match-body">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <h3><a href="{% url 'scholarship_detail' s.pk %}">{{ s.title }}</a></h3>
+        <span class="match-score" title="Match strength relative to your best result">
+          <span class="rank">#{{ rec.rank }}</span> {{ rec.match_percent }}%
+        </span>
+      </div>
+      <div class="meta">
+        {% if s.degree %}<span><i class="bi bi-mortarboard"></i> {{ s.degree }}</span>{% endif %}
+        {% if s.country %}<span><i class="bi bi-geo-alt"></i> {{ s.country }}</span>{% endif %}
+        {% if s.university_name %}<span><i class="bi bi-building"></i> {{ s.university_name|truncatechars:60 }}</span>{% endif %}
+      </div>
+      {% if rec.matched_terms_list %}
+      <p class="why"><strong>Why it matched:</strong>
+        {% for t in rec.matched_terms_list %}<span class="term">{{ t }}</span>{% endfor %}
+      </p>
+      {% endif %}
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'scholarship_detail' s.pk %}" class="btn btn-sm btn-outline-brand">Details</a>
+        {% if s.link %}<a href="{{ s.link }}" class="btn btn-sm btn-brand" target="_blank" rel="noopener noreferrer">Official website <i class="bi bi-box-arrow-up-right ms-1"></i></a>{% endif %}
+      </div>
+    </div>
+  </article>
+  {% endwith %}
+  {% endfor %}
+
+  {% if recommendations.has_other_pages %}
+  <nav aria-label="Results pages">
+    <ul class="pagination justify-content-center mt-4">
+      {% if recommendations.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ recommendations.previous_page_number }}">Previous</a></li>{% endif %}
+      {% for n in recommendations.paginator.page_range %}
+      <li class="page-item {% if n == recommendations.number %}active{% endif %}"><a class="page-link" href="?page={{ n }}">{{ n }}</a></li>
+      {% endfor %}
+      {% if recommendations.has_next %}<li class="page-item"><a class="page-link" href="?page={{ recommendations.next_page_number }}">Next</a></li>{% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+{% else %}
+<div class="panel empty-state">
+  <i class="bi bi-search"></i>
+  <p>We couldn't find a strong match. Try mentioning your subject and the level you want to study,
+     remove the destination filter, or add a few <a href="{% url 'add_field_of_interest' %}">interests</a>.</p>
+  <a href="{% url 'my_recommendations' %}" class="btn btn-brand btn-sm">Try again</a>
+</div>
+{% endif %}
+{% endblock %}

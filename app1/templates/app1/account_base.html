@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% comment %}
+  Shared layout for every logged-in page: sidebar with the user's details and
+  account navigation, a page heading, flash messages, then the page content.
+{% endcomment %}
+{% block body %}
+{% with current=request.resolver_match.url_name %}
+<main id="main" class="account-page">
+  <div class="container">
+    <div class="row g-4">
+
+      <aside class="col-lg-3">
+        <div class="account-sidebar">
+          <div class="account-user">
+            <img src="{{ user.profile.photo.url }}" alt="" class="account-avatar">
+            <div>
+              <strong>{{ user.get_full_name|default:user.username }}</strong>
+              <small>@{{ user.username }}</small>
+            </div>
+          </div>
+          <nav class="account-nav" aria-label="Account">
+            <a href="{% url 'userprofile' %}" class="{% if current == 'userprofile' or current == 'userprofileedit' %}active{% endif %}"><i class="bi bi-person"></i> My profile</a>
+            <a href="{% url 'my_recommendations' %}" class="{% if current == 'my_recommendations' or current == 'recommendation_results' %}active{% endif %}"><i class="bi bi-stars"></i> Recommendations</a>
+            <a href="{% url 'add_field_of_interest' %}" class="{% if current == 'add_field_of_interest' %}active{% endif %}"><i class="bi bi-bookmark-heart"></i> Interests</a>
+            <a href="{% url 'my_history' %}" class="{% if current == 'my_history' %}active{% endif %}"><i class="bi bi-clock-history"></i> History</a>
+            <a href="{% url 'feedback' %}" class="{% if current == 'feedback' %}active{% endif %}"><i class="bi bi-chat-left-text"></i> Feedback</a>
+            <hr>
+            <a href="{% url 'password_reset_settings' %}" class="{% if current == 'password_reset_settings' %}active{% endif %}"><i class="bi bi-shield-lock"></i> Change password</a>
+            <a href="{% url 'delete_account' %}" class="{% if current == 'delete_account' %}active{% endif %} text-danger-soft"><i class="bi bi-trash"></i> Delete account</a>
+          </nav>
+        </div>
+      </aside>
+
+      <div class="col-lg-9 account-content">
+        <div class="account-heading">
+          <div>
+            <h1>{% block heading %}{% endblock %}</h1>
+            <p>{% block subheading %}{% endblock %}</p>
+          </div>
+          <div class="account-actions">{% block actions %}{% endblock %}</div>
+        </div>
+
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+
+        {% block account %}{% endblock %}
+      </div>
+
+    </div>
+  </div>
+</main>
+{% endwith %}
+{% endblock %}

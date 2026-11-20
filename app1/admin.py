@@ -49,13 +49,21 @@ class RecommendationInline(admin.TabularInline):
 
 @admin.register(History)
 class HistoryAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "profile", "created_at")
+    list_display = ("__str__", "profile", "input_type", "target_degree", "created_at")
+    list_filter = ("input_type",)
     inlines = [RecommendationInline]
 
 
 @admin.register(Feedback)
 class FeedbackAdmin(admin.ModelAdmin):
-    list_display = ("content", "emoji", "profile", "created")
+    list_display = ("content", "emoji", "profile", "created", "is_approved")
+    list_filter = ("is_approved",)
+    list_editable = ("is_approved",)
+    actions = ("approve",)
+
+    @admin.action(description="Approve (show on home page)")
+    def approve(self, request, queryset):
+        queryset.update(is_approved=True)
 
 
 admin.site.register([Country, FieldOfInterest, Institute, Program, TypeOfDegree])

@@ -99,8 +99,13 @@ class SearchTests(SampleDataMixin, TestCase):
         self.assertEqual(r.status_code, 200)
 
     def test_degree_list_pages(self):
-        for name in ("scholarshipone", "scholarshiptwo", "scholarshipthree"):
-            self.assertEqual(self.client.get(reverse(name)).status_code, 200)
+        for name, degree in (("scholarshipone", "PhD"), ("scholarshiptwo", "Bachelors"), ("scholarshipthree", "Masters")):
+            self.assertRedirects(self.client.get(reverse(name)), reverse("category_degree", args=[degree]))
+
+    def test_degrees_page_counts(self):
+        r = self.client.get(reverse("trainers"))
+        counts = {d["name"]: d["count"] for d in r.context["degrees"]}
+        self.assertEqual(counts["Bachelors"], Scholarship.objects.filter(degree__icontains="bachelor").count())
 
     def test_legacy_search_redirects(self):
         r = self.client.get(reverse("search"), {"degree": "Masters", "query": "Canada"})
@@ -113,7 +118,7 @@ class PublicPagesTests(SampleDataMixin, TestCase):
         s = Scholarship.objects.first()
         urls = [
             reverse(n) for n in (
-                "home", "subjects", "about", "trainers", "pricing", "scholarships",
+                "home", "subjects", "about", "trainers", "scholarships",
                 "login", "Registration",
             )
         ] + [
@@ -229,21 +234,18 @@ class RecommendationViewTests(SampleDataMixin, TestCase):
         self.client.login(username="alice", password="Str0ng-Passphrase!")
 
     def test_short_statement_rejected(self):
-        r = self.client.get(reverse("my_recommendations"), {"statement": "too short"})
-        self.assertEqual(r.context["scholarships"], "")
+        r = self.client.post(reverse("my_recommendations"), {"statement": "too short"})
+        self.assertEqual(r.status_code, 400)
         self.assertFalse(History.objects.exists())
 
     def test_recommendations_are_ranked_and_saved(self):
-        r = self.client.get(reverse("my_recommendations"), {"statement": STATEMENT_DS})
-        self.assertEqual(r.status_code, 200)
-        first = r.context["scholarships"][0]
-        self.assertIn("Data Science", first.title)
+        r = self.client.post(reverse("my_recommendations"), {"statement": STATEMENT_DS})
         history = History.objects.get()
-        self.assertEqual(Recommendation.objects.filter(history=history, rank=1).get().scholarship, first)
+        self.assertRedirects(r, reverse("recommendation_results", args=[history.pk]))
+        first = Recommendation.objects.get(history=history, rank=1).scholarship
+        self.assertIn("Data Science", first.title)
 
-        # Same statement again reuses the history row
-        self.client.get(reverse("my_recommendations"), {"statement": STATEMENT_DS})
-        self.assertEqual(History.objects.count(), 1)
-
-        r = self.client.get(reverse("my_history"))
+        r = self.client.get(reverse("recommendation_results", args=[history.pk]))
         self.assertContains(r, first.title)
+        r = self.client.get(reverse("my_history"))
+        self.assertContains(r, "computer science graduate")

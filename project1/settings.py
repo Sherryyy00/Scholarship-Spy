@@ -80,6 +80,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "app1.context_processors.assets",
             ],
         },
     },
@@ -118,6 +119,9 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "collected_static"
+# While developing, always serve the current files rather than an old collectstatic copy.
+WHITENOISE_USE_FINDERS = DEBUG
+WHITENOISE_AUTOREFRESH = DEBUG
 
 MEDIA_URL = "/mediafiles/"
 MEDIA_ROOT = BASE_DIR / "static" / "mediafiles"
