@@ -33,14 +33,27 @@ Scholarship Spy is a Django web app that helps students find scholarships. You c
 - **Save and track.** Bookmark any scholarship, then follow it on a board through *Interested → Preparing → Applied → Interview → Successful/Unsuccessful*, with private notes. Upcoming deadlines also appear on the profile page.
 - **Email reminders.** Users get one digest email 14 days and again 3 days before a saved scholarship closes, while it's still *Interested* or *Preparing*. Each reminder is sent only once per deadline. Every email has a one-click unsubscribe link, and reminders can also be turned off in the profile.
 
-Run reminders once a day:
+### Automatic daily jobs (no commands needed)
+
+The site runs two jobs by itself while it's up:
+
+| Job | When (UTC, configurable) | What it does |
+|---|---|---|
+| `daily_scrape` | after 03:00 (`SCRAPE_AT`) | Collects fresh scholarships from every enabled source |
+| `deadline_reminders` | after 08:00 (`REMINDERS_AT`) | Emails users whose saved scholarships close soon |
+
+Each job runs **at most once a day**, even with several server processes, because a run is claimed by a database row that can only exist once per day. If the site was asleep at the scheduled time, the job runs as soon as it wakes. Every run, with its output and any error, is listed in the admin under **Job runs**.
+
+Other ways to run them, if you prefer:
 
 ```bash
-python manage.py send_deadline_reminders            # sends emails
-python manage.py send_deadline_reminders --dry-run  # just counts
+python manage.py run_jobs --list                    # what's scheduled
+python manage.py run_jobs --force deadline_reminders # run one now
+python manage.py run_scheduler                      # scheduler as a separate worker
+python manage.py run_jobs                           # for cron, e.g. hourly
 ```
 
-On Windows, use Task Scheduler to run `python manage.py send_deadline_reminders` daily. On a server, use cron, for example `30 8 * * * cd /path/to/app && python manage.py send_deadline_reminders`. Without SMTP settings, emails are printed to the console.
+Set `SCHEDULER_AUTOSTART=False` if you use the worker or cron options instead. Without SMTP settings, emails are printed to the console.
 
 ## Eligibility
 
