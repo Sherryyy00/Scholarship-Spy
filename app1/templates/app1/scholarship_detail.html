@@ -42,6 +42,19 @@
   </div>
 
   <aside class="col-lg-4">
+    {% if eligibility %}
+    <div class="panel el-panel el-{{ eligibility.status }}">
+      <h2 class="panel-title">
+        {% if eligibility.status == "eligible" %}<i class="bi bi-check-circle"></i> You can probably apply
+        {% elif eligibility.status == "not_eligible" %}<i class="bi bi-slash-circle"></i> You may not be eligible
+        {% else %}<i class="bi bi-question-circle"></i> Check eligibility{% endif %}
+      </h2>
+      {% if eligibility.reasons %}<ul class="el-reasons">{% for r in eligibility.reasons %}<li>{{ r }}</li>{% endfor %}</ul>
+      {% else %}<p class="hint mb-0">We couldn't work out the rules for this one. Read the eligibility section on the official site.</p>{% endif %}
+      {% if not user.profile.nationality %}<a href="{% url 'userprofileedit' %}" class="small-link">Add your nationality</a>{% endif %}
+      <p class="hint mt-2 mb-0">Based on your profile. Always confirm on the official website.</p>
+    </div>
+    {% endif %}
     <div class="panel cta-panel">
       <h2 class="panel-title">Is this a good fit?</h2>
       <p class="hint">Paste your statement or upload your CV and we'll rank every scholarship against it.</p>

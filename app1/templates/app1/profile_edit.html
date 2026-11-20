@@ -34,8 +34,12 @@
       <input type="date" name="dob" id="id_dob" class="form-control" value="{{ user.profile.dob|date:'Y-m-d' }}">
     </div>
     <div class="col-md-6">
-      <label class="form-label" for="id_nationality">Nationality</label>
-      <input type="text" name="nationality" id="id_nationality" class="form-control" maxlength="100" value="{{ user.profile.nationality }}" autocomplete="country-name">
+      <label class="form-label" for="id_nationality">Nationality <span class="text-muted">(citizenship)</span></label>
+      <select name="nationality" id="id_nationality" class="form-select" autocomplete="country-name">
+        <option value="">Choose your country</option>
+        {% for c in country_choices %}<option value="{{ c }}" {% if c == current_nationality %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+      <small class="hint">Used to hide scholarships you can't apply for.</small>
     </div>
     <div class="col-md-6">
       <label class="form-label" for="id_highest_qualification">Highest qualification</label>
