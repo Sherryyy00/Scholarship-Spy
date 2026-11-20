@@ -195,6 +195,15 @@ class ReminderTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user("sherry", "sherry@example.com", PASSWORD, first_name="Sherry")
         self.profile = self.user.profile
+        self.profile.is_verified = True
+        self.profile.save(update_fields=["is_verified"])
+
+    def test_unverified_email_gets_nothing(self):
+        self.profile.is_verified = False
+        self.profile.save(update_fields=["is_verified"])
+        self.save(3)
+        self.assertEqual(send_reminders(today=T), (0, 0))
+        self.assertEqual(len(mail.outbox), 0)
 
     def save(self, days, status=SavedScholarship.INTERESTED, title=None):
         deadline = T + timedelta(days=days)
