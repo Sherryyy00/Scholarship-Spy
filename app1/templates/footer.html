@@ -2,50 +2,58 @@
 
 <!-- ======= Footer ======= -->
 <footer id="footer">
-
     <div class="footer-top">
         <div class="container">
-            <div class="row">
+            <div class="row gy-4">
 
-                <div class="col-lg-2 col-md-6 footer-links">
-                    <h4>Useful Links</h4>
+                <div class="col-lg-4 col-md-12">
+                    <h3 class="footer-brand">Scholarship <b>Spy</b></h3>
+                    <p class="footer-about">
+                        Scholarships from official sources in one place, with recommendations ranked against your
+                        personal statement. Always confirm details on the provider's website before you apply.
+                    </p>
+                </div>
+
+                <div class="col-lg-2 col-6 footer-links">
+                    <h4>Explore</h4>
                     <ul>
-                        <li><i class="bx bx-chevron-right"></i> <a href="#">Home</a></li>
-                        <li><i class="bx bx-chevron-right"></i> <a href="#">Guidelines</a></li>
-                        <li><i class="bx bx-chevron-right"></i> <a href="#">Scholarships</a></li>
-                        <li><i class="bx bx-chevron-right"></i> <a href="#">Regions</a></li>
-                        <li><i class="bx bx-chevron-right"></i> <a href="#">Degrees</a></li>
+                        <li><i class="bx bx-chevron-right"></i> <a href="{% url 'home' %}">Home</a></li>
+                        <li><i class="bx bx-chevron-right"></i> <a href="{% url 'scholarships' %}">All scholarships</a></li>
+                        <li><i class="bx bx-chevron-right"></i> <a href="{% url 'subjects' %}">Subjects</a></li>
+                        <li><i class="bx bx-chevron-right"></i> <a href="{% url 'about' %}">About</a></li>
                     </ul>
                 </div>
 
-                <div class="col-lg-3 col-md-6 footer-links">
-                    <h4> Find Scholarships</h4>
+                <div class="col-lg-3 col-6 footer-links">
+                    <h4>By degree</h4>
                     <ul>
-                        <li><i class="bx bx-chevron-right"></i> <a href="#">Doctorate Program</a></li>
-                        <li><i class="bx bx-chevron-right"></i> <a href="#">Bachelors</a></li>
-                        <li><i class="bx bx-chevron-right"></i> <a href="#">Masters</a></li>
-                        <li><i class="bx bx-chevron-right"></i> <a href="#">Courses</a></li>
-                        <li><i class="bx bx-chevron-right"></i> <a href="#">Training Programs</a></li>
+                        <li><i class="bx bx-chevron-right"></i> <a href="{% url 'category_degree' 'Bachelors' %}">Bachelors</a></li>
+                        <li><i class="bx bx-chevron-right"></i> <a href="{% url 'category_degree' 'Masters' %}">Masters</a></li>
+                        <li><i class="bx bx-chevron-right"></i> <a href="{% url 'category_degree' 'PhD' %}">PhD</a></li>
                     </ul>
                 </div>
 
-                <div class="col-lg-4 col-md-6 footer-newsletter">
-                    <h4>Join Our Newsletter</h4>
-                    <p>Join our Newsletter so we can update you about the scholarhips and other programs.</p>
-                    <form action="" method="post">
-                        <input type="email" name="email"><input type="submit" value="Subscribe">
-                    </form>
+                <div class="col-lg-3 col-md-12 footer-links">
+                    <h4>Your account</h4>
+                    <ul>
+                        {% if user.is_authenticated %}
+                        <li><i class="bx bx-chevron-right"></i> <a href="{% url 'userprofile' %}">My profile</a></li>
+                        <li><i class="bx bx-chevron-right"></i> <a href="{% url 'my_recommendations' %}">My recommendations</a></li>
+                        <li><i class="bx bx-chevron-right"></i> <a href="{% url 'feedback' %}">Send feedback</a></li>
+                        {% else %}
+                        <li><i class="bx bx-chevron-right"></i> <a href="{% url 'Registration' %}">Create an account</a></li>
+                        <li><i class="bx bx-chevron-right"></i> <a href="{% url 'login' %}">Log in</a></li>
+                        {% endif %}
+                    </ul>
                 </div>
 
             </div>
         </div>
     </div>
-    <div class="social-links text-center text-md-right pt-3 pt-md-0">
-        <a href="#" class="twitter"><i class="bx bxl-twitter"></i></a>
-        <a href="#" class="facebook"><i class="bx bxl-facebook"></i></a>
-        <a href="#" class="instagram"><i class="bx bxl-instagram"></i></a>
-        <a href="#" class="google-plus"><i class="bx bxl-skype"></i></a>
-        <a href="#" class="linkedin"><i class="bx bxl-linkedin"></i></a>
-    </div>
+    <div class="container footer-bottom d-md-flex justify-content-between align-items-center py-3">
+        <small>© {% now "Y" %} Scholarship Spy. Erasmus Mundus data © European Union, CC BY 4.0.</small>
+        <a href="https://github.com/Sherryyy00/Scholarship-Spy" class="footer-github" target="_blank" rel="noopener noreferrer">
+            <i class="bx bxl-github"></i> View on GitHub
+        </a>
     </div>
 </footer><!-- End Footer -->

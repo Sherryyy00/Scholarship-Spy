@@ -7,11 +7,9 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
 
 
-  <title>Scholarship Spy</title>
-  <meta content="" name="description">
+  <title>{% block title %}Scholarship Spy | Find scholarships that fit you{% endblock %}</title>
+  <meta content="Search scholarships from official sources and get recommendations ranked against your personal statement." name="description">
   <meta content="" name="keywords">
-  <link href="{% static 'assets/css/style.css' %}" rel="stylesheet" type="text/css">
-  <link href="{% static 'assets/css/style.css' %}" rel="stylesheet" type='text/css'>
   <!-- Favicons -->
   <link href="{% static 'assets/img/logo-sp.png' %}" rel="icon">
   <link href="{% static 'assets/img/logo-sp.png' %}" rel="apple-touch-icon">
@@ -33,6 +31,7 @@
   <!-- Template Main CSS File -->
   <link href="{% static 'assets/style.css' %}" rel="stylesheet" type="text/css">
   <link href="{% static 'assets/css/style.css' %}" rel="stylesheet">
+  <link href="{% static 'assets/css/custom.css' %}" rel="stylesheet">
 
   <!-- CSS -->
   {% block custom_css_links %}
@@ -40,7 +39,6 @@
   {% endblock custom_css_links %}
 
 
-  <title>{% block title %}{% endblock %}</title>
 
 </head>
 
@@ -60,7 +58,6 @@
       class="bi bi-arrow-up-short"></i></a>
 
   <!-- Vendor JS Files -->
-  <script src="{% static 'assets/vendor/purecounter/purecounter.js'%}"></script>
   <script src="{% static 'assets/vendor/aos/aos.js'%}"></script>
   <script src="{% static 'assets/vendor/bootstrap/js/bootstrap.bundle.min.js'%}"></script>
   <script src="{% static 'assets/vendor/swiper/swiper-bundle.min.js'%}"></script>

@@ -117,13 +117,18 @@
   /**
    * Animation on scroll
    */
-  window.addEventListener('load', () => {
-    AOS.init({
+  // Start animations as soon as the page is ready (don't wait for web fonts/images).
+  const startAOS = () => AOS.init({
       duration: 1000,
       easing: 'ease-in-out',
       once: true,
-      mirror: false
+      mirror: false,
+      disable: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
     })
-  });
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startAOS)
+  } else {
+    startAOS()
+  }
 
 })()

@@ -72,9 +72,36 @@ def search_dropdowns():
 
 # ---------- public pages ----------
 
+# Destinations shown on the home page: (display name, search term, photo)
+HOME_DESTINATIONS = [
+    ("United Kingdom", "United Kingdom", "assets/img/countries/london.jpeg"),
+    ("Germany", "Germany", "assets/img/countries/germanyy.jpeg"),
+    ("Canada", "Canada", "assets/img/countries/canada.jpeg"),
+    ("United States", "United States", "assets/img/countries/usa.jpeg"),
+    ("Australia", "Australia", "assets/img/countries/australia.jpeg"),
+    ("Japan", "Japan", "assets/img/countries/japan.jpeg"),
+]
+
+
+def site_stats():
+    live = Scholarship.objects.all()
+    return {
+        "scholarships": live.count(),
+        "countries": live.exclude(country="").values("country").distinct().count(),
+        "subjects": site_subjects().count(),
+        "sources": live.values("source").distinct().count(),
+    }
+
+
 def index(request):
+    live = Scholarship.objects.all()
     context = search_dropdowns()
     context["all_feedbacks"] = Feedback.objects.select_related("profile__user")[:3]
+    context["stats"] = site_stats()
+    context["destinations"] = [
+        {"name": name, "query": query, "image": image, "count": live.filter(country__icontains=query).count()}
+        for name, query, image in HOME_DESTINATIONS
+    ]
     return render(request, "app1/index.html", context)
 
 
@@ -180,7 +207,7 @@ def scholarship2(request):
 
 
 def about(request):
-    return render(request, "app1/about.html")
+    return render(request, "app1/about.html", {"stats": site_stats()})
 
 
 def services(request):
@@ -188,7 +215,7 @@ def services(request):
 
 
 def contact(request):
-    return render(request, "app1/contact.html")
+    return redirect("about")
 
 
 # ---------- accounts ----------

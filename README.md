@@ -80,6 +80,7 @@ Scholarship Spy collects listings automatically from public sources (`app1/scrap
 
 | Source | What it gives | Status |
 |---|---|---|
+| `curated_official` | Chevening, three Commonwealth schemes and two DAAD programmes, as short summaries we wrote that link to the official pages (their sites don't permit scraping) | ✅ enabled, no network needed |
 | `erasmus_mundus_rss` | The newest ~30 Erasmus Mundus Joint Masters, from the EU's official catalogue feed, with study area, duration and partner universities | ✅ enabled |
 | `erasmus_mundus_catalogue` | The full catalogue (~190 programmes) with countries | 🧪 experimental, needs checking against the live page |
 
@@ -107,7 +108,7 @@ To keep the data fresh, run `python manage.py scrape` once a day. Use cron on a 
 python manage.py test app1
 ```
 
-There are 53 tests covering recommender accuracy, scrapers and data ingestion, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
+There are 67 tests covering recommender accuracy, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
 
 ## Configuration
 
@@ -135,4 +136,5 @@ When `DJANGO_DEBUG` is off, secure cookies and other security headers are switch
 
 - Sentence-embedding model (for example `all-MiniLM-L6-v2`) as an optional upgrade to TF-IDF
 - Deadline parsing and email reminders
-- Verify the full catalogue parser and add more official sources (e.g. DAAD, Commonwealth, Chevening)
+- Verify the full Erasmus Mundus catalogue parser
+- Ask DAAD and the CSC for permission or a data feed, so their full databases can be included
