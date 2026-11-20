@@ -9,7 +9,7 @@
       <h3><a href="{% url 'scholarship_detail' scholarship.pk %}">{{ scholarship.title }}</a></h3>
       {% include "app1/_save_button.html" with compact=1 %}
     </div>
-    {% deadline_badge scholarship %}
+    <div class="badge-row">{% deadline_badge scholarship %}{% eligibility_badge scholarship %}</div>
     {% if scholarship.scholarship_details %}<p class="sch-card-text">{{ scholarship.scholarship_details|truncatechars:180 }}</p>{% endif %}
     <ul class="sch-card-meta">
       {% if scholarship.degree %}<li><i class="bi bi-mortarboard"></i>{{ scholarship.degree }}</li>{% endif %}

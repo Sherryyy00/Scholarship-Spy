@@ -42,6 +42,16 @@ python manage.py send_deadline_reminders --dry-run  # just counts
 
 On Windows, use Task Scheduler to run `python manage.py send_deadline_reminders` daily. On a server, use cron, for example `30 8 * * * cd /path/to/app && python manage.py send_deadline_reminders`. Without SMTP settings, emails are printed to the console.
 
+## Eligibility
+
+Each scholarship's "who can apply" text is turned into rules (`app1/eligibility.py`) and checked against the user's nationality, highest qualification and CGPA:
+
+- **Nationality.** "International students" (not open to nationals of the host country), "UK and EU", "developing countries", "low and middle income Commonwealth countries", "all nationalities", and lists such as Chevening's (shown as *check the official list*, never guessed). Country groups (EU, Commonwealth, World Bank high income) are in `app1/geo.py`, each noting its source and when it was checked.
+- **Degree level.** Someone who already holds a master's isn't usually funded for another master's.
+- **Grades.** Minimum GPA, where the listing states one.
+
+Results are *eligible*, *not eligible* (with the reason) or *unknown*. Only clear "not eligible" results are hidden: on lists via **"Only ones I can apply for"**, and in recommendations by default with a **Show all** link. Users are always told to confirm on the official website.
+
 ## Privacy and security
 
 - **CVs are never stored.** The text is extracted in memory, then emails, phone numbers and links are removed. Only that cleaned text is kept with your search, so the results can be refreshed later.
@@ -135,7 +145,7 @@ To keep the data fresh, run `python manage.py scrape` once a day. Use cron on a 
 python manage.py test app1
 ```
 
-There are 144 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
+There are 159 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
 
 ## Configuration
 
