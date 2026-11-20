@@ -28,9 +28,10 @@
           <label class="form-label" for="id_password">Password</label>
           <div class="input-group mb-4">
             <span class="input-group-text"><i class="bi bi-lock"></i></span>
-            <input type="password" class="form-control" name="password" id="id_password" autocomplete="new-password" required>
+            <input type="password" class="form-control" name="password" id="id_password" autocomplete="current-password" required>
           </div>
           <button type="submit" class="btn btn-brand w-100">Log in</button>
+          <p class="text-center mt-3 mb-0"><a href="{% url 'password_reset' %}">Forgot your password?</a></p>
         </form>
         <p class="text-center mt-4 mb-0 d-md-none">New here? <a href="{% url 'Registration' %}">Create an account</a></p>
       </div>

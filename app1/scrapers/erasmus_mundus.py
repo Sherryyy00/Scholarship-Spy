@@ -17,11 +17,12 @@ Two sources:
 """
 
 import re
-import xml.etree.ElementTree as ET
 from collections import defaultdict
 from html import unescape
 
 from bs4 import BeautifulSoup
+from defusedxml import DefusedXmlException
+from defusedxml import ElementTree as ET  # safe against XML bombs / external entities
 
 from .base import BaseScraper, ScrapedScholarship, ScraperError
 
@@ -74,7 +75,7 @@ class ErasmusMundusRSSScraper(BaseScraper):
     def parse(cls, xml_text):
         try:
             root = ET.fromstring(xml_text.encode("utf-8") if isinstance(xml_text, str) else xml_text)
-        except ET.ParseError as exc:
+        except (ET.ParseError, DefusedXmlException) as exc:
             raise ScraperError(f"RSS is not valid XML: {exc}") from exc
 
         for item in root.iter("item"):
