@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load scholarship_tags %}
 {% if user.is_authenticated %}
 {% load static %}
 
@@ -65,7 +66,7 @@
                                         class="bi bi-person-fill mx-2"></i>My Profile</a>
                                 <a href="{% url 'my_recommendations' %}" class="col-md-12 py-2"><i
                                         class="bi bi-file-text mx-2"></i>My
-                                    Recommmendations</a>
+                                    Recommendations</a>
                                 <a href="{% url 'feedback' %}" class="col-md-12 py-2"><i
                                         class="bi bi-file-text mx-2"></i>Feedback</a>
                                 <a href="{% url 'my_history' %}" class="col-md-12 py-2"><i
@@ -89,21 +90,12 @@
                                 <div class="card border">
                                     <div class="card-horizontal">
                                         <div class="img-square-wrapper">
-                                            {% if 'http' not in scholarship.image_link %}
-                                            <img class="" src="{% static 'assets/img/image_skipped.png' %}"
-                                                alt="Card image cap"
-                                                style="width: 300px;height:300px; object-fit: contain;">
-                                            {% else %}
-                                            <img class="" src="{{scholarship.image_link}}" alt="Card image cap"
-                                                style="width: 300px;height:300px; object-fit: contain;">
-
-                                            {% endif %}
+                                            <img class="sch-thumb" src="{% scholarship_image scholarship %}" alt="{{ scholarship.subject|default:scholarship.title }}">
 
                                         </div>
                                         <div class="card-body">
                                             <h2 class="card-title"><a
-                                                    href="{% url 'scholarship_detail' scholarship.pk %}"
-                                                    target="_blank">{{scholarship.title}}</a></h2>
+                                                    href="{% url 'scholarship_detail' scholarship.pk %}">{{scholarship.title}}</a></h2>
 
                                             <div class="my-3">
                                                 {% if scholarship.tution_structure %}
@@ -158,7 +150,7 @@
 
                                             </div>
                                             <div class="d-flex justify-content-end">
-                                                <a href="{{scholarship.link}}" target="_blank"
+                                                <a href="{{scholarship.link}}" target="_blank" rel="noopener noreferrer"
                                                     style="background-color: #31526B; color:white;"
                                                     class="btn btn-primary">Learn More</a>
                                             </div>

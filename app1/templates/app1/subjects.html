@@ -49,7 +49,7 @@
               <div class="col-md-3 px-2 py-3">
                 {% for subject in subject_lst %}
                 <small class="single_subject">
-                  <a href="{% url 'category_subjects' subject.name %}" target="_blank">
+                  <a href="{% url 'category_subjects' subject.name %}">
                     {{subject.name}}</a>
                 </small><br>
                 {% endfor %}
