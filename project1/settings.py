@@ -42,6 +42,11 @@ if not SECRET_KEY:
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
+# Run the daily scrape and reminder emails automatically inside the web process
+# (see app1/jobs.py). On by default while developing; on a host you can keep it on
+# (jobs still run once a day) or switch it off and use `run_scheduler` / cron instead.
+SCHEDULER_AUTOSTART = env_bool("SCHEDULER_AUTOSTART", DEBUG)
+
 # Public base URL, used in emails (e.g. the account verification link).
 SITE_URL = os.environ.get("SITE_URL", "http://127.0.0.1:8000").rstrip("/")
 
