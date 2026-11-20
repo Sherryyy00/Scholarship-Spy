@@ -1,5 +1,5 @@
 import logging
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from urllib.parse import urlencode
 
@@ -8,20 +8,25 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db import transaction
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
 from . import recommender
 from .models import (
     Country, Feedback, FieldOfInterest, History, Program, Recommendation,
     Scholarship, TypeOfDegree,
 )
+from .uploads import extract_cv_text, process_profile_photo, suggested_degree
 from .utils import send_email_token
 
 logger = logging.getLogger(__name__)
@@ -96,7 +101,7 @@ def site_stats():
 def index(request):
     live = Scholarship.objects.all()
     context = search_dropdowns()
-    context["all_feedbacks"] = Feedback.objects.select_related("profile__user")[:3]
+    context["all_feedbacks"] = Feedback.objects.filter(is_approved=True).select_related("profile__user")[:3]
     context["stats"] = site_stats()
     context["destinations"] = [
         {"name": name, "query": query, "image": image, "count": live.filter(country__icontains=query).count()}
@@ -282,26 +287,77 @@ def verify(request, token):
     return redirect("login")
 
 
+# ---------- login (email or username, with brute-force protection) ----------
+
+LOGIN_MAX_FAILURES = 5
+LOGIN_LOCKOUT_SECONDS = 15 * 60
+
+
+def _client_ip(request):
+    return request.META.get("REMOTE_ADDR", "")
+
+
+def _throttle_keys(request, identifier):
+    ident = (identifier or "").strip().lower()[:150]
+    return [f"login-fail:ip:{_client_ip(request)}", f"login-fail:id:{ident}"]
+
+
+def _is_locked(request, identifier):
+    return any(cache.get(k, 0) >= LOGIN_MAX_FAILURES for k in _throttle_keys(request, identifier))
+
+
+def _record_failure(request, identifier):
+    for key in _throttle_keys(request, identifier):
+        cache.add(key, 0, LOGIN_LOCKOUT_SECONDS)
+        try:
+            cache.incr(key)
+        except ValueError:
+            cache.set(key, 1, LOGIN_LOCKOUT_SECONDS)
+
+
+def _clear_failures(request, identifier):
+    cache.delete_many(_throttle_keys(request, identifier))
+
+
+def _authenticate_username_or_email(request, identifier, password):
+    """Accept either a username or the email address on the account."""
+    user = authenticate(request, username=identifier, password=password)
+    if user is None and "@" in identifier:
+        match = User.objects.filter(email__iexact=identifier).order_by("id").first()
+        if match is not None:
+            user = authenticate(request, username=match.username, password=password)
+    return user
+
+
 def user_login(request):
+    if request.user.is_authenticated:
+        return redirect("home")
     if request.method == "POST":
-        user = authenticate(
-            request,
-            username=(request.POST.get("username") or "").strip(),
-            password=request.POST.get("password") or "",
-        )
+        identifier = (request.POST.get("username") or "").strip()
+        password = request.POST.get("password") or ""
+        if _is_locked(request, identifier):
+            messages.error(request, "Too many failed attempts. Please wait 15 minutes and try again.")
+            return render(request, "app1/userlogin.html", status=429)
+        user = _authenticate_username_or_email(request, identifier, password)
         if user is not None:
+            _clear_failures(request, identifier)
             login(request, user)
-            next_url = request.GET.get("next") or request.POST.get("next")
+            next_url = request.POST.get("next") or request.GET.get("next")
             if next_url and url_has_allowed_host_and_scheme(next_url, {request.get_host()}, request.is_secure()):
                 return redirect(next_url)
             return redirect("home")
-        messages.error(request, "Invalid username or password.")
+        _record_failure(request, identifier)
+        messages.error(request, "Invalid username/email or password.")
     return render(request, "app1/userlogin.html")
 
 
 def user_logout(request):
-    logout(request)
-    return redirect("login")
+    """Log out on POST only, so other websites can't log users out with a link."""
+    if request.method == "POST":
+        logout(request)
+        messages.info(request, "You've been logged out.")
+        return redirect("login")
+    return redirect("home")
 
 
 @login_required
@@ -335,15 +391,6 @@ def password_reset_settings(request):
 
 
 # ---------- profile ----------
-
-@login_required
-def showprofile(request):
-    profile = request.user.profile
-    return render(request, "app1/profile.html", {
-        "field_of_interest_list": profile.fieldofinterest_set.all(),
-        "current_program_list": profile.program_set.order_by("-timestamp"),
-    })
-
 
 def _parse_profile_form(post, user):
     """Validate the edit-profile form. Returns (cleaned_data, errors)."""
@@ -398,6 +445,19 @@ def _parse_profile_form(post, user):
     return data, errors
 
 
+
+
+@login_required
+def showprofile(request):
+    profile = request.user.profile
+    return render(request, "app1/profile.html", {
+        "field_of_interest_list": profile.fieldofinterest_set.order_by("name"),
+        "current_program_list": profile.program_set.order_by("-timestamp"),
+        "recent_history": profile.history_set.all()[:3],
+        "history_count": profile.history_set.count(),
+    })
+
+
 @login_required
 def showformdata(request):
     """Edit profile. Always edits the logged-in user (the old version trusted a hidden email field)."""
@@ -406,6 +466,14 @@ def showformdata(request):
 
     user, profile = request.user, request.user.profile
     data, errors = _parse_profile_form(request.POST, user)
+
+    photo = None
+    if request.FILES.get("photo"):
+        try:
+            photo = process_profile_photo(request.FILES["photo"])
+        except ValidationError as exc:
+            errors.extend(exc.messages)
+
     if errors:
         for error in errors:
             messages.error(request, error)
@@ -419,81 +487,227 @@ def showformdata(request):
         for field in ("highest_qualification", "nationality", "cgpa", "age", "dob"):
             if field in data:
                 setattr(profile, field, data[field])
-        if request.FILES.get("photo"):
-            profile.photo = request.FILES["photo"]
+        if photo is not None:
+            old = profile.photo.name
+            profile.photo.save(photo.name, photo, save=False)
+            if old and old != "default.jpg":
+                profile.photo.storage.delete(old)
         profile.save()
 
     messages.success(request, "Profile updated.")
     return redirect("userprofile")
 
 
-def _add_named_item(request, model, field, template):
-    if request.method == "POST":
-        name = (request.POST.get(field) or "").strip()
-        if not name:
-            messages.error(request, "Please enter a value.")
-            return redirect(request.path)
-        model.objects.get_or_create(name=name[:300], profile=request.user.profile)
-        return redirect("userprofile")
-    return render(request, template)
+# ---------- interests & programmes ----------
+
+# Starter ideas for people who aren't sure what to add yet.
+STARTER_INTERESTS = [
+    "Computer Science", "Data Science", "Artificial Intelligence", "Business Administration",
+    "Economics", "Finance", "Public Health", "Medicine", "Nursing", "Engineering",
+    "Renewable Energy", "Environmental Science", "Agriculture", "Law", "International Relations",
+    "Education", "Psychology", "Arts and Design", "Architecture", "Mathematics",
+]
+MAX_INTERESTS = 15
 
 
 @login_required
 def add_field_of_interest(request):
-    return _add_named_item(request, FieldOfInterest, "fieldOfInterest", "app1/field_of_interest_form.html")
+    profile = request.user.profile
+    mine = list(profile.fieldofinterest_set.order_by("name"))
+    if request.method == "POST":
+        name = " ".join((request.POST.get("fieldOfInterest") or "").split())[:60]
+        if not name:
+            messages.error(request, "Please type or pick an interest.")
+        elif len(mine) >= MAX_INTERESTS:
+            messages.error(request, f"You can save up to {MAX_INTERESTS} interests. Remove one to add another.")
+        elif any(i.name.lower() == name.lower() for i in mine):
+            messages.info(request, f"“{name}” is already in your interests.")
+        else:
+            FieldOfInterest.objects.create(name=name, profile=profile)
+            messages.success(request, f"Added “{name}”.")
+        return redirect("add_field_of_interest")
+
+    taken = {i.name.lower() for i in mine}
+    popular = [
+        row["subject"] for row in
+        Scholarship.objects.exclude(subject="").values("subject").annotate(n=Count("id")).order_by("-n")[:30]
+    ]
+    popular = list(dict.fromkeys(p.split(";")[0].strip() for p in popular))  # first subject, de-duplicated
+    # Skip catch-all labels like "All subjects" or "Development-related subjects" - they aren't real interests.
+    popular = [p for p in popular if p and "subject" not in p.lower() and p.lower() not in taken][:12]
+    shown = {p.lower() for p in popular}
+    return render(request, "app1/field_of_interest_form.html", {
+        "my_interests": mine,
+        "starter_interests": [s for s in STARTER_INTERESTS if s.lower() not in taken and s.lower() not in shown],
+        "popular_interests": popular,
+        "all_subjects": site_subjects(),
+        "max_interests": MAX_INTERESTS,
+    })
+
+
+@login_required
+@require_POST
+def remove_field_of_interest(request, pk):
+    get_object_or_404(FieldOfInterest, pk=pk, profile=request.user.profile).delete()
+    return redirect(request.POST.get("next") if request.POST.get("next") == reverse("userprofile") else "add_field_of_interest")
 
 
 @login_required
 def add_current_program(request):
-    return _add_named_item(request, Program, "program", "app1/current_program.html")
+    if request.method == "POST":
+        name = " ".join((request.POST.get("program") or "").split())[:150]
+        if not name:
+            messages.error(request, "Please enter the programme you're studying.")
+            return redirect("current_program")
+        Program.objects.get_or_create(name=name, profile=request.user.profile)
+        messages.success(request, "Programme saved.")
+        return redirect("userprofile")
+    return render(request, "app1/current_program.html")
+
+
+@login_required
+@require_POST
+def remove_current_program(request, pk):
+    get_object_or_404(Program, pk=pk, profile=request.user.profile).delete()
+    return redirect("userprofile")
 
 
 # ---------- recommendations ----------
+
+DEGREE_CHOICES = ["Bachelors", "Masters", "PhD"]
+
 
 def _save_recommendations(history, matches):
     with transaction.atomic():
         Recommendation.objects.filter(history=history).delete()
         Recommendation.objects.bulk_create([
-            Recommendation(history=history, scholarship_id=m.scholarship_id, rank=rank, score=m.score)
+            Recommendation(
+                history=history, scholarship_id=m.scholarship_id, rank=rank, score=m.score,
+                matched_terms="|".join(m.terms)[:200],
+            )
             for rank, m in enumerate(matches, start=1)
         ])
 
 
+def run_recommendations(history):
+    """Rank scholarships for a History (statement and/or CV) and store the results."""
+    candidates = Scholarship.objects.all()
+    if history.target_degree:
+        candidates = candidates.filter(degree__icontains=history.target_degree.rstrip("s"))
+    if history.target_country:
+        candidates = candidates.filter(country__icontains=history.target_country)
+    candidate_ids = None
+    if history.target_degree or history.target_country:
+        candidate_ids = set(candidates.values_list("id", flat=True))
+
+    interests = list(history.profile.fieldofinterest_set.values_list("name", flat=True))
+    boost = "" if history.target_degree else suggested_degree(history.query_text)
+    matches = recommender.recommend(
+        history.query_text, extra_terms=interests, candidate_ids=candidate_ids, boost_degree=boost,
+    )
+    _save_recommendations(history, matches)
+    return matches
+
+
 @login_required
 def my_recommendations(request):
-    statement = (request.GET.get("statement") or "").strip()
-    context = {"personal_statement": statement, "scholarships": ""}
-
-    if not statement:
-        return render(request, "app1/recommendations.html", context)
-
-    if len(statement) < MIN_STATEMENT_LENGTH:
-        messages.info(request, f"Your statement should be at least {MIN_STATEMENT_LENGTH} characters.")
-        return render(request, "app1/recommendations.html", context)
-
+    """Form to get recommendations. Sent by POST so statements never appear in URLs or logs."""
     profile = request.user.profile
-    history = History.objects.filter(profile=profile, personal_statement=statement).first()
-    is_new = history is None
-    if is_new:
-        history = History.objects.create(profile=profile, personal_statement=statement)
+    context = {
+        "degree_choices": DEGREE_CHOICES,
+        "countries": Country.objects.all(),
+        "recent_history": profile.history_set.all()[:5],
+        "min_length": MIN_STATEMENT_LENGTH,
+        "form": {"statement": "", "degree": "", "country": ""},
+    }
+    if request.method != "POST":
+        return render(request, "app1/recommendations.html", context)
 
-    # Only recompute on a new statement or the first page, so paging through results is cheap.
-    if is_new or not request.GET.get("page"):
-        interests = list(profile.fieldofinterest_set.values_list("name", flat=True))
-        _save_recommendations(history, recommender.recommend(statement, extra_terms=interests))
+    statement = (request.POST.get("statement") or "").strip()[:10_000]
+    degree = request.POST.get("degree") if request.POST.get("degree") in DEGREE_CHOICES else ""
+    country = (request.POST.get("country") or "").strip()[:100]
+    if country and not Country.objects.filter(name=country).exists():
+        country = ""
+    cv_file = request.FILES.get("cv")
+    context["form"] = {"statement": statement, "degree": degree, "country": country, "mode": "cv" if cv_file else ""}
 
-    ranked = history.top_scholarships
-    if not ranked.exists():
-        messages.info(request, "We couldn't find a good match. Try mentioning your subject, degree level and target country.")
-    else:
-        context["scholarships"] = paginate(request, ranked)
-    return render(request, "app1/recommendations.html", context)
+    errors, cv_text = [], ""
+    if cv_file:
+        try:
+            cv_text = extract_cv_text(cv_file)
+        except ValidationError as exc:
+            errors.extend(exc.messages)
+    if not cv_file and not statement:
+        errors.append("Write a personal statement or upload your CV (or both).")
+    elif statement and not cv_file and len(statement) < MIN_STATEMENT_LENGTH:
+        errors.append(
+            f"Your statement is {len(statement)} characters. Please write at least {MIN_STATEMENT_LENGTH}, "
+            "or upload your CV instead."
+        )
+    if errors:
+        for error in errors:
+            messages.error(request, error)
+        return render(request, "app1/recommendations.html", context, status=400)
+
+    input_type = History.INPUT_BOTH if (statement and cv_text) else (History.INPUT_CV if cv_text else History.INPUT_STATEMENT)
+    history = History.objects.create(
+        profile=profile, personal_statement=statement, cv_text=cv_text,
+        cv_filename=(cv_file.name[:255] if cv_file else ""), input_type=input_type,
+        target_degree=degree, target_country=country,
+    )
+    run_recommendations(history)
+    return redirect("recommendation_results", pk=history.pk)
+
+
+@login_required
+def recommendation_results(request, pk):
+    history = get_object_or_404(History, pk=pk, profile=request.user.profile)
+    recs = (
+        Recommendation.objects.filter(history=history, scholarship__is_active=True)
+        .select_related("scholarship").order_by("rank")
+    )
+    top_score = recs[0].score if recs else 0
+    page = paginate(request, recs)
+    for rec in page:
+        # Relative match strength (best result = 100%), easier to read than raw cosine scores.
+        rec.match_percent = round(100 * rec.score / top_score) if top_score else 0
+    return render(request, "app1/recommendation_results.html", {
+        "history": history,
+        "recommendations": page,
+        "total": recs.count(),
+        "suggested_degree": "" if history.target_degree else suggested_degree(history.query_text),
+    })
+
+
+@login_required
+@require_POST
+def rerun_recommendations(request, pk):
+    history = get_object_or_404(History, pk=pk, profile=request.user.profile)
+    run_recommendations(history)
+    messages.success(request, "Recommendations refreshed with the latest scholarships.")
+    return redirect("recommendation_results", pk=history.pk)
 
 
 @login_required
 def my_history(request):
-    histories = request.user.profile.history_set.all()
-    return render(request, "app1/my_history.html", {"user_history": histories})
+    histories = request.user.profile.history_set.annotate(n=Count("recommendation"))
+    return render(request, "app1/my_history.html", {"user_history": paginate(request, histories)})
+
+
+@login_required
+@require_POST
+def delete_history(request, pk):
+    get_object_or_404(History, pk=pk, profile=request.user.profile).delete()
+    messages.success(request, "Deleted from your history.")
+    return redirect("my_history")
+
+
+@login_required
+@require_POST
+def clear_history(request):
+    request.user.profile.history_set.all().delete()
+    messages.success(request, "Your history has been cleared.")
+    return redirect("my_history")
 
 
 # ---------- feedback ----------
@@ -501,15 +715,36 @@ def my_history(request):
 @login_required
 def feedback(request):
     if request.method == "POST":
-        content = (request.POST.get("feedback") or "").strip()
-        if not content:
-            messages.error(request, "Please write a short message.")
+        content = " ".join((request.POST.get("feedback") or "").split())
+        emoji = request.POST.get("emoji") if request.POST.get("emoji") in {"1", "2", "3", "4"} else ""
+        if len(content) < 5:
+            messages.error(request, "Please write a short message (at least 5 characters).")
             return redirect("feedback")
-        Feedback.objects.create(
-            content=content[:500],
-            emoji=(request.POST.get("emoji") or "")[:100],
-            profile=request.user.profile,
-        )
-        messages.success(request, "Thanks for your feedback!")
+        if Feedback.objects.filter(profile=request.user.profile, created__gte=timezone.now() - timedelta(minutes=10)).count() >= 3:
+            messages.error(request, "Thanks! You've sent a few messages already. Please try again a bit later.")
+            return redirect("feedback")
+        Feedback.objects.create(content=content[:500], emoji=emoji, profile=request.user.profile)
+        messages.success(request, "Thanks for your feedback! It will appear on the site once it's reviewed.")
+        return redirect("feedback")
+    return render(request, "app1/feedback.html", {
+        "my_feedback": request.user.profile.feedback_set.all()[:5],
+    })
+
+
+# ---------- account deletion ----------
+
+@login_required
+def delete_account(request):
+    if request.method == "POST":
+        if not request.user.check_password(request.POST.get("password") or ""):
+            messages.error(request, "That password is incorrect.")
+            return redirect("delete_account")
+        user = request.user
+        photo = user.profile.photo
+        if photo and photo.name != "default.jpg":
+            photo.storage.delete(photo.name)
+        logout(request)
+        user.delete()  # cascades to profile, history, interests, feedback
+        messages.success(request, "Your account and all your data have been deleted.")
         return redirect("home")
-    return render(request, "app1/feedback.html")
+    return render(request, "app1/delete_account.html")
