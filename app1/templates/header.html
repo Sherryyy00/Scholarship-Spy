@@ -1,81 +1,41 @@
 <!-- ======= Header ======= -->
+{% with path=request.path %}
 <header id="header" class="fixed-top">
     <div class="container d-flex align-items-center">
 
-        <h1 class="logo me-auto"><a href="/" class="">Scholarship <b>Spy</b></a></h1>
+        <h1 class="logo me-auto"><a href="{% url 'home' %}">Scholarship <b>Spy</b></a></h1>
 
-        <nav id="navbar" class="navbar order-last order-lg-0">
-
+        <nav id="navbar" class="navbar order-last order-lg-0" aria-label="Main">
             <ul>
-                <li><a class="active " href="/">Home</a></li>
-                <li><a href="{% url 'scholarships' %}" class="">Scholarships</a></li>
-                <li><a href="{% url 'trainers' %}" class="">Degrees</a></li>
-                <li><a href="{% url 'subjects' %}" class="">Subject</a></li>
-                <li><a href="{% url 'about' %}" class="">Guidelines</a></li>
+                <li><a class="{% if path == '/' %}active{% endif %}" href="{% url 'home' %}">Home</a></li>
+                <li><a class="{% if 'scholarship' in path or 'search' in path %}active{% endif %}" href="{% url 'scholarships' %}">Scholarships</a></li>
+                <li><a class="{% if 'degree' in path or 'trainers' in path %}active{% endif %}" href="{% url 'trainers' %}">Degrees</a></li>
+                <li><a class="{% if 'subject' in path %}active{% endif %}" href="{% url 'subjects' %}">Subjects</a></li>
+                <li><a class="{% if 'recommendations' in path %}active{% endif %}" href="{% url 'my_recommendations' %}">Recommendations</a></li>
+                <li><a class="{% if 'about' in path %}active{% endif %}" href="{% url 'about' %}">About</a></li>
             </ul>
-
+            <i class="bi bi-list mobile-nav-toggle" aria-label="Open menu"></i>
         </nav>
 
         {% if user.is_authenticated %}
-        <div class="dropdown mx-3 ">
-            <a class="btn rounded-pill dropdown-toggle " href="#" role="button" id="dropdownMenuLink"
-                data-bs-toggle="dropdown" aria-expanded="false" style="box-shadow:none ;">
-
-                <img src="{{user.profile.photo.url}}" alt="" class="rounded-pill" style="width:35px ;height:35px; ">
+        <div class="dropdown ms-3">
+            <a class="btn rounded-pill dropdown-toggle p-1" href="#" role="button" id="dropdownMenuLink"
+                data-bs-toggle="dropdown" aria-expanded="false" style="box-shadow:none;" aria-label="Account menu">
+                <img src="{{ user.profile.photo.url }}" alt="" class="rounded-circle header-avatar">
             </a>
-
-            <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-                <li><a class="dropdown-item" href="{% url 'userprofile' %}">My Profile</a></li>
-                <li><a class="dropdown-item" href="{% url 'my_recommendations' %}">My Recommendations</a></li>
-                <li><a class="dropdown-item" href="{% url 'my_history' %}">History</a></li>
-                <li><a class="dropdown-item" href="{% url 'feedback' %}">Feedback</a></li>
-                <li class="border-bottom"></li>
-                <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink">
+                <li><h6 class="dropdown-header">Hi, {{ user.first_name|default:user.username }}</h6></li>
+                <li><a class="dropdown-item" href="{% url 'userprofile' %}"><i class="bi bi-person me-2"></i>My profile</a></li>
+                <li><a class="dropdown-item" href="{% url 'my_recommendations' %}"><i class="bi bi-stars me-2"></i>My recommendations</a></li>
+                <li><a class="dropdown-item" href="{% url 'my_history' %}"><i class="bi bi-clock-history me-2"></i>History</a></li>
+                <li><a class="dropdown-item" href="{% url 'feedback' %}"><i class="bi bi-chat-heart me-2"></i>Feedback</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Log out</a></li>
             </ul>
         </div>
         {% else %}
-        <a href="{% url 'login' %}" class="get-started-btn text-white">Get Started</a>
+        <a href="{% url 'login' %}" class="get-started-btn text-white">Log in</a>
         {% endif %}
     </div>
 </header>
-
-<!-- <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="#">Navbar</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
-            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="#">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Link</a>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                        data-bs-toggle="dropdown" aria-expanded="false">
-                        Dropdown
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="#">Action</a></li>
-                        <li><a class="dropdown-item" href="#">Another action</a></li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li><a class="dropdown-item" href="#">Something else here</a></li>
-                    </ul>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link disabled">Disabled</a>
-                </li>
-            </ul>
-            <form class="d-flex">
-                <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-                <button class="btn btn-outline-success" type="submit">Search</button>
-            </form>
-        </div>
-    </div>
-</nav> -->
+{% endwith %}
