@@ -23,7 +23,8 @@ from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from . import recommender
+from . import eligibility as elig
+from . import geo, recommender
 from .models import (
     Country, Feedback, FieldOfInterest, History, Program, Recommendation,
     SavedScholarship, Scholarship, TypeOfDegree,
@@ -70,6 +71,13 @@ def site_degree_types():
 
 
 SORT_OPTIONS = [("", "Relevance / A–Z"), ("deadline", "Closing soon"), ("newest", "Recently added")]
+
+
+def apply_eligible_filter(request, queryset):
+    """?eligible=1 hides scholarships the logged-in user clearly can't apply for."""
+    if request.GET.get("eligible") == "1" and request.user.is_authenticated:
+        return queryset.exclude(pk__in=elig.blocked_ids(queryset, request.user.profile)), True
+    return queryset, False
 
 
 def apply_sort(request, queryset):
@@ -133,8 +141,10 @@ def search_results(request):
     if not filters:
         return redirect("home")
 
-    results, sort = apply_sort(request, Scholarship.objects.filter(**filters))
+    results, eligible_only = apply_eligible_filter(request, Scholarship.objects.filter(**filters))
+    results, sort = apply_sort(request, results)
     filter_qs = {k: v for k, v in params.items() if v}
+    state = _list_state(sort, eligible_only, filter_qs)
     context = {
         **params,
         **search_dropdowns(),
@@ -142,8 +152,9 @@ def search_results(request):
         "number_of_scholarships": results.count(),
         "sort": sort,
         "sort_options": SORT_OPTIONS,
-        "filter_fields": filter_qs,
-        "qs": urlencode({**filter_qs, **({"sort": sort} if sort else {})}),
+        "eligible_only": eligible_only,
+        "filter_fields": {k: v for k, v in state.items() if k != "sort"},
+        "qs": urlencode(state),
     }
     return render(request, "app1/scholarship_results.html", context)
 
@@ -164,7 +175,9 @@ def subjects(request):
 
 
 def _category(request, template, heading, preset, **lookup):
-    results, sort = apply_sort(request, Scholarship.objects.filter(**lookup))
+    results, eligible_only = apply_eligible_filter(request, Scholarship.objects.filter(**lookup))
+    results, sort = apply_sort(request, results)
+    state = _list_state(sort, eligible_only)
     return render(request, template, {
         **search_dropdowns(),
         **preset,
@@ -173,7 +186,9 @@ def _category(request, template, heading, preset, **lookup):
         "number_of_scholarships": results.count(),
         "sort": sort,
         "sort_options": SORT_OPTIONS,
-        "qs": urlencode({"sort": sort}) if sort else "",
+        "eligible_only": eligible_only,
+        "filter_fields": {k: v for k, v in state.items() if k != "sort"},
+        "qs": urlencode(state),
     })
 
 
@@ -200,14 +215,28 @@ def scholarshipdegree3(request):
     return redirect("category_degree", degree="Masters")
 
 
+def _list_state(sort, eligible_only, extra=None):
+    """Query-string pieces that pagination and the toolbar must keep."""
+    fields = dict(extra or {})
+    if sort:
+        fields["sort"] = sort
+    if eligible_only:
+        fields["eligible"] = "1"
+    return fields
+
+
 def scholarshipdata(request):
-    results, sort = apply_sort(request, Scholarship.objects.all())
+    results, eligible_only = apply_eligible_filter(request, Scholarship.objects.all())
+    results, sort = apply_sort(request, results)
+    state = _list_state(sort, eligible_only)
     return render(request, "app1/events.html", {
         **search_dropdowns(),
         "scholarships": paginate(request, results),
         "sort": sort,
         "sort_options": SORT_OPTIONS,
-        "qs": urlencode({"sort": sort}) if sort else "",
+        "eligible_only": eligible_only,
+        "filter_fields": {k: v for k, v in state.items() if k != "sort"},
+        "qs": urlencode(state),
     })
 
 
@@ -218,7 +247,10 @@ def scholarship_detail(request, pk):
     ids = [m.scholarship_id for m in matches if m.scholarship_id != scholarship.pk][:4]
     by_id = Scholarship.objects.in_bulk(ids)
     similar = [by_id[i] for i in ids if i in by_id]
-    return render(request, "app1/scholarship_detail.html", {"scholarship": scholarship, "similar": similar})
+    eligibility_result = elig.check(scholarship, request.user.profile) if request.user.is_authenticated else None
+    return render(request, "app1/scholarship_detail.html", {
+        "scholarship": scholarship, "similar": similar, "eligibility": eligibility_result,
+    })
 
 
 def scholarshipdatadetial(request, id):
@@ -448,10 +480,18 @@ def _parse_profile_form(post, user):
     """Validate the edit-profile form. Returns (cleaned_data, errors)."""
     data, errors = {}, []
 
-    for field in ("first_name", "last_name", "highest_qualification", "nationality"):
+    for field in ("first_name", "last_name", "highest_qualification"):
         value = (post.get(field) or "").strip()
         if value:
             data[field] = value
+
+    nationality = (post.get("nationality") or "").strip()
+    if nationality:
+        country = geo.normalise_country(nationality)
+        if country:
+            data["nationality"] = country
+        else:
+            errors.append("Please choose your nationality from the list.")
 
     email = (post.get("email") or "").strip().lower()
     if email:
@@ -519,7 +559,10 @@ def showprofile(request):
 def showformdata(request):
     """Edit profile. Always edits the logged-in user (the old version trusted a hidden email field)."""
     if request.method != "POST":
-        return render(request, "app1/profile_edit.html")
+        return render(request, "app1/profile_edit.html", {
+            "country_choices": geo.all_countries(),
+            "current_nationality": geo.normalise_country(request.user.profile.nationality) or request.user.profile.nationality,
+        })
 
     user, profile = request.user, request.user.profile
     data, errors = _parse_profile_form(request.POST, user)
@@ -720,10 +763,16 @@ def my_recommendations(request):
 @login_required
 def recommendation_results(request, pk):
     history = get_object_or_404(History, pk=pk, profile=request.user.profile)
-    recs = (
+    recs = list(
         Recommendation.objects.filter(history=history, scholarship__is_active=True)
         .select_related("scholarship").order_by("rank")
     )
+    show_all = request.GET.get("all") == "1"
+    profile = request.user.profile
+    blocked = {r.pk for r in recs if elig.check(r.scholarship, profile).is_blocked}
+    hidden_count = 0 if show_all else len(blocked)
+    if not show_all:
+        recs = [r for r in recs if r.pk not in blocked]
     top_score = recs[0].score if recs else 0
     page = paginate(request, recs)
     for rec in page:
@@ -732,7 +781,10 @@ def recommendation_results(request, pk):
     return render(request, "app1/recommendation_results.html", {
         "history": history,
         "recommendations": page,
-        "total": recs.count(),
+        "total": len(recs),
+        "hidden_count": hidden_count,
+        "show_all": show_all,
+        "has_nationality": bool(profile.nationality),
         "suggested_degree": "" if history.target_degree else suggested_degree(history.query_text),
     })
 
