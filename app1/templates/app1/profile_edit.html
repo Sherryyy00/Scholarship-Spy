@@ -54,6 +54,12 @@
     </div>
   </div>
 
+  <h2 class="panel-title mt-4">Notifications</h2>
+  <div class="form-check form-switch">
+    <input class="form-check-input" type="checkbox" role="switch" name="email_reminders" id="id_email_reminders" {% if user.profile.email_reminders %}checked{% endif %}>
+    <label class="form-check-label" for="id_email_reminders">Email me 14 and 3 days before a saved scholarship closes</label>
+  </div>
+
   <div class="d-flex gap-2 mt-4">
     <button type="submit" class="btn btn-brand">Save changes</button>
     <a href="{% url 'userprofile' %}" class="btn btn-outline-brand">Cancel</a>
