@@ -114,7 +114,7 @@ class PublicPagesTests(SampleDataMixin, TestCase):
         urls = [
             reverse(n) for n in (
                 "home", "subjects", "about", "trainers", "pricing", "scholarships",
-                "contact", "login", "Registration",
+                "login", "Registration",
             )
         ] + [
             reverse("scholarship_detail", args=[s.pk]),

@@ -126,7 +126,7 @@
   #imgbg {
     width: 100%;
     height: 80vh;
-    background: url("../assests/img/spy-bg.jpg") top center;
+    background: url("img/spy-bg.jpg") top center;
     background-size: cover;
     position: relative;
   }

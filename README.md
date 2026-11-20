@@ -74,13 +74,41 @@ python manage.py updatemodel path/to/scholarships.csv --clear  # replace everyth
 
 The column names are flexible, and the old scraper headers (`Title`, `Links`, `apply_date`, `scholarship_details` and so on) still work. Re-running the import updates existing rows instead of creating duplicates. It also fills the country, subject and degree dropdowns.
 
+## Live data: scrapers
+
+Scholarship Spy collects listings automatically from public sources (`app1/scrapers/`).
+
+| Source | What it gives | Status |
+|---|---|---|
+| `curated_official` | Chevening, three Commonwealth schemes and two DAAD programmes, as short summaries we wrote that link to the official pages (their sites don't permit scraping) | ✅ enabled, no network needed |
+| `erasmus_mundus_rss` | The newest ~30 Erasmus Mundus Joint Masters, from the EU's official catalogue feed, with study area, duration and partner universities | ✅ enabled |
+| `erasmus_mundus_catalogue` | The full catalogue (~190 programmes) with countries | 🧪 experimental, needs checking against the live page |
+
+```bash
+python manage.py scrape --list                 # see sources
+python manage.py scrape                        # run all enabled sources
+python manage.py scrape erasmus_mundus_catalogue --dry-run --save-html samples/
+```
+
+How it keeps data trustworthy:
+
+- **Polite by design.** It sends a clear User-Agent, checks `robots.txt` before every request, waits 2 seconds between requests, and backs off on errors.
+- **Upserts, not duplicates.** Each listing is tracked by its source and source ID, so re-runs update existing rows.
+- **Freshness.** Every listing records when it was last seen. Listings that disappear from their source are hidden, never deleted. If a run suddenly finds far fewer listings (a broken parser), nothing is hidden.
+- **Credit.** Each scholarship page shows its source, licence and last-checked date.
+- **Audit trail.** Every run is logged in the admin under *Scrape runs* (found, new, updated, hidden, errors).
+
+To keep the data fresh, run `python manage.py scrape` once a day. Use cron on a server, or Task Scheduler on Windows. A GitHub Action (`scraper-health.yml`) also runs a daily dry run and emails you if a source breaks.
+
+**Adding a source:** first check the site's terms of use and `robots.txt` allow automated access. Then subclass `BaseScraper`, register it in `app1/scrapers/__init__.py`, and add a test with a saved sample page in `app1/tests_data/`.
+
 ## Running tests
 
 ```bash
 python manage.py test app1
 ```
 
-There are 30 tests covering recommender accuracy, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
+There are 67 tests covering recommender accuracy, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
 
 ## Configuration
 
@@ -108,4 +136,5 @@ When `DJANGO_DEBUG` is off, secure cookies and other security headers are switch
 
 - Sentence-embedding model (for example `all-MiniLM-L6-v2`) as an optional upgrade to TF-IDF
 - Deadline parsing and email reminders
-- Scheduled scraper to keep the data fresh
+- Verify the full Erasmus Mundus catalogue parser
+- Ask DAAD and the CSC for permission or a data feed, so their full databases can be included

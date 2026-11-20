@@ -2,15 +2,35 @@ from django.contrib import admin
 
 from .models import (
     Country, Feedback, FieldOfInterest, History, Institute, Profile, Program,
-    Recommendation, Scholarship, TypeOfDegree,
+    Recommendation, Scholarship, ScrapeRun, TypeOfDegree,
 )
 
 
 @admin.register(Scholarship)
 class ScholarshipAdmin(admin.ModelAdmin):
-    list_display = ("title", "university_name", "degree", "country", "apply_date")
-    list_filter = ("degree", "country")
+    list_display = ("title", "university_name", "degree", "country", "source", "is_active", "last_seen_at")
+    list_filter = ("is_active", "source", "degree", "country")
     search_fields = ("title", "university_name", "subject", "scholarship_details")
+    readonly_fields = ("source", "source_id", "source_url", "attribution", "last_seen_at", "created_at", "updated_at")
+    actions = ("mark_active", "mark_inactive")
+
+    @admin.action(description="Show on site")
+    def mark_active(self, request, queryset):
+        queryset.update(is_active=True)
+
+    @admin.action(description="Hide from site")
+    def mark_inactive(self, request, queryset):
+        queryset.update(is_active=False)
+
+
+@admin.register(ScrapeRun)
+class ScrapeRunAdmin(admin.ModelAdmin):
+    list_display = ("source", "started_at", "status", "found", "created", "updated", "deactivated")
+    list_filter = ("status", "source")
+    readonly_fields = [f.name for f in ScrapeRun._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(Profile)
