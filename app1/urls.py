@@ -39,10 +39,17 @@ urlpatterns = [
     path("profile/", views.showprofile, name="userprofile"),
     path("profile/edit/", views.showformdata, name="userprofileedit"),
     path("program/add/", views.add_current_program, name="current_program"),
+    path("program/<int:pk>/remove/", views.remove_current_program, name="remove_current_program"),
     path("field_of_interest/add/", views.add_field_of_interest, name="add_field_of_interest"),
+    path("field_of_interest/<int:pk>/remove/", views.remove_field_of_interest, name="remove_field_of_interest"),
+    path("account/delete/", views.delete_account, name="delete_account"),
 
     # Recommendations & feedback
     path("recommendations/", views.my_recommendations, name="my_recommendations"),
+    path("recommendations/<int:pk>/", views.recommendation_results, name="recommendation_results"),
+    path("recommendations/<int:pk>/refresh/", views.rerun_recommendations, name="rerun_recommendations"),
     path("history/", views.my_history, name="my_history"),
+    path("history/<int:pk>/delete/", views.delete_history, name="delete_history"),
+    path("history/clear/", views.clear_history, name="clear_history"),
     path("feedback/", views.feedback, name="feedback"),
 ]
