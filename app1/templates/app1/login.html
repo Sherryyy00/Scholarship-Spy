@@ -16,11 +16,11 @@
           <small class="text-danger">{{fm.errors|striptags}}</small><br>
         </div>
         {% endfor %}
-        <small><a href="{% url 'password_reset' %}">Forgot Password ?</a></small> <br>
+        <small><a href="{% url 'password_reset_settings' %}">Forgot Password ?</a></small> <br>
         <input type="submit" class="btn btn-primary mt-4" value="Login">
         <br>
         <div class="text-center text-primary fw-bold"><small>New to ScholarshipSpy? <a
-              href="{% url 'customerregistration' %}" class="text-danger">Create an Account</a> </small></div>
+              href="{% url 'Registration' %}" class="text-danger">Create an Account</a> </small></div>
 
         {% if form.non_field_errors %}
         {% for error in form.non_field_errors %}
