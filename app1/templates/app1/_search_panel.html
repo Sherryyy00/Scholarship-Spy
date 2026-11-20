@@ -1,0 +1,25 @@
+{# Sticky search form used beside listings. Uses all_countries / all_field_of_interests / all_degree_types and current values. #}
+<form method="get" action="{% url 'search_results' %}" class="panel search-panel">
+  <h2 class="panel-title">Refine search</h2>
+  <label class="form-label" for="sp_title">Keyword</label>
+  <input type="text" name="scholarship_title" id="sp_title" class="form-control mb-3" value="{{ scholarship_title|default:'' }}" placeholder="e.g. Chevening">
+  <label class="form-label" for="sp_country">Country</label>
+  <select name="country" id="sp_country" class="form-select mb-3">
+    <option value="">Any country</option>
+    {% for c in all_countries %}<option value="{{ c.name }}" {% if c.name == country %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+  </select>
+  <label class="form-label" for="sp_subject">Subject</label>
+  <select name="field_of_interest" id="sp_subject" class="form-select mb-3">
+    <option value="">Any subject</option>
+    {% for f in all_field_of_interests %}<option value="{{ f.name }}" {% if f.name == field_of_interest %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+  </select>
+  <label class="form-label" for="sp_degree">Degree</label>
+  <select name="degree" id="sp_degree" class="form-select mb-4">
+    <option value="">Any degree</option>
+    {% for d in all_degree_types %}<option value="{{ d.name }}" {% if d.name == degree %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+  </select>
+  <button type="submit" class="btn btn-brand w-100"><i class="bi bi-search"></i> Search</button>
+  {% if user.is_authenticated %}
+  <a href="{% url 'my_recommendations' %}" class="btn btn-outline-brand w-100 mt-2"><i class="bi bi-stars"></i> Get personal matches</a>
+  {% endif %}
+</form>

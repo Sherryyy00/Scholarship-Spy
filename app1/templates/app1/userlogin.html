@@ -17,18 +17,18 @@
         <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} py-2">{{ message }}</div>
         {% endfor %}
 
-        <form method="post" novalidate>
+        <form method="post" novalidate autocomplete="off">
           {% csrf_token %}
           <input type="hidden" name="next" value="{{ request.GET.next }}">
-          <label class="form-label" for="id_username">Username</label>
+          <label class="form-label" for="id_username">Username or email</label>
           <div class="input-group mb-3">
             <span class="input-group-text"><i class="bi bi-person"></i></span>
-            <input type="text" class="form-control" name="username" id="id_username" autocomplete="username" required autofocus>
+            <input type="text" class="form-control" name="username" id="id_username" autocomplete="off" autocapitalize="none" spellcheck="false" required autofocus>
           </div>
           <label class="form-label" for="id_password">Password</label>
           <div class="input-group mb-4">
             <span class="input-group-text"><i class="bi bi-lock"></i></span>
-            <input type="password" class="form-control" name="password" id="id_password" autocomplete="current-password" required>
+            <input type="password" class="form-control" name="password" id="id_password" autocomplete="new-password" required>
           </div>
           <button type="submit" class="btn btn-brand w-100">Log in</button>
         </form>

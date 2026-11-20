@@ -6,7 +6,7 @@ Scholarship Spy is a Django web app that helps students find scholarships. You c
 
 ## Features
 
-- **Personalised recommendations.** Paste your personal statement and get scholarships ranked by relevance. Your saved fields of interest are taken into account too.
+- **Personalised recommendations.** Write a personal statement, **upload your CV (PDF, Word or text)**, or both. Results are ranked by relevance, with the words that explain each match. You can filter by degree level and destination, and your saved interests count too.
 
   <p align="center"><img src="images/recommendation.jpeg" alt="Recommendations page" width="50%"></p>
 
@@ -26,6 +26,15 @@ Scholarship Spy is a Django web app that helps students find scholarships. You c
 
   <p align="center"><img src="images/admin.jpeg" alt="Admin panel" width="50%"></p>
 
+## Privacy and security
+
+- **CVs are never stored.** The text is extracted in memory, then emails, phone numbers and links are removed. Only that cleaned text is kept with your search, so the results can be refreshed later.
+- Statements are sent by POST, so they never appear in URLs, server logs or browser history.
+- Profile photos are checked and re-encoded, which also strips EXIF and GPS data, and saved under random names.
+- Login accepts a username or email and locks out after 5 failed attempts for 15 minutes. Logging out requires a POST.
+- Users can delete individual searches, clear their whole history, or delete their account and all of its data.
+- New feedback appears on the home page only after an admin approves it.
+
 ## How the recommender works
 
 It's a content-based recommender built with scikit-learn (`app1/recommender.py`).
@@ -33,7 +42,9 @@ It's a content-based recommender built with scikit-learn (`app1/recommender.py`)
 1. **Indexing.** Each scholarship's title, subject, degree, country, university, eligibility and description become one document. Title and subject count double. The documents are turned into **TF-IDF vectors** using single words and two-word phrases, with English stop words removed and sublinear term frequency.
 2. **Querying.** Your personal statement and your saved fields of interest are turned into a vector with the same vocabulary.
 3. **Ranking.** Scholarships are ranked by **cosine similarity** to your statement. Weak matches are dropped, and the top 20 are saved with their rank and score.
-4. **Caching.** The index is built once and kept in memory. Django signals rebuild it whenever a scholarship is added, edited or deleted, so each request stays fast.
+4. **CVs and statements.** A CV is cleaned the same way and goes through the same pipeline. Common filler words ("year", "university", "experience"...) are ignored so they don't count as matches. If you don't pick a degree level, the app guesses your next one from what you've completed (for example BSc → Masters) and gives those scholarships a small boost. It ignores sentences about what you *want* to study.
+5. **Explaining results.** Each result lists the strongest terms it shares with your text, and results weaker than 10% of the best match are dropped.
+6. **Caching.** The index is built once and kept in memory. Django signals rebuild it whenever a scholarship is added, edited or deleted, so each request stays fast.
 
 The tests check that results are accurate. For example, a data science statement must rank the data science scholarship first, and a renewable energy statement must rank the energy scholarship first.
 
@@ -108,7 +119,7 @@ To keep the data fresh, run `python manage.py scrape` once a day. Use cron on a 
 python manage.py test app1
 ```
 
-There are 67 tests covering recommender accuracy, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
+There are 109 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
 
 ## Configuration
 

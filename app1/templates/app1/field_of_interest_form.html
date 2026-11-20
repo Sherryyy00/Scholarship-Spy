@@ -1,142 +1,64 @@
-{% extends 'base.html' %}
-{% if user.is_authenticated %}
-{% load static %}
+{% extends "app1/account_base.html" %}
+{% block title %}My interests | Scholarship Spy{% endblock %}
+{% block heading %}My interests{% endblock %}
+{% block subheading %}Subjects you care about. We use them to sharpen your recommendations.{% endblock %}
 
-{% block custom_css_links %}
-<link href="{% static 'assets/css/profile_style.css' %}" rel="stylesheet">
-{% endblock custom_css_links %}
+{% block account %}
+<div class="panel">
+  <h2 class="panel-title">Your interests <span class="text-muted fw-normal">({{ my_interests|length }}/{{ max_interests }})</span></h2>
+  {% if my_interests %}
+  <div class="chip-list">
+    {% for i in my_interests %}
+    <form method="post" action="{% url 'remove_field_of_interest' i.pk %}" class="chip chip-removable">
+      {% csrf_token %}
+      <span>{{ i.name }}</span>
+      <button type="submit" aria-label="Remove {{ i.name }}"><i class="bi bi-x"></i></button>
+    </form>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-muted mb-0">Nothing yet. Pick a few from the suggestions below, or type your own.</p>
+  {% endif %}
 
-{% block body %}
-<div class="main-content">
-
-    <!-- Header -->
-    <div class="header d-flex align-items-center" style="min-height: 180px;">
-        <span class="mask opacity-8"></span>
+  <form method="post" class="add-interest mt-4" autocomplete="off">
+    {% csrf_token %}
+    <label class="form-label" for="id_interest">Add your own</label>
+    <div class="input-group">
+      <input type="text" name="fieldOfInterest" id="id_interest" class="form-control" maxlength="60"
+             placeholder="Start typing, e.g. Data Science" list="subject-options" required>
+      <button type="submit" class="btn btn-brand">Add</button>
     </div>
-    <!-- Page content -->
-    <div class="container-fluid mt-6">
-        <div class="row">
-            <div class="col-xl-3 order-xl-1 mb-5 mb-xl-0">
-                <div class="card card-profile shadow">
-                    <div class="row justify-content-center">
-                        <div class="col-lg-3 order-lg-2">
-                            <div class="card-profile-image">
-                                <a href="#">
-                                    <img src="{{user.profile.photo.url}}" class="rounded-circle" width="100px"
-                                        height="100px" style="object-fit: cover;"> </a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body pt-0 pt-md-4">
-
-                        <div class="mt-5 pt-5">
-                            <div class="text-center">
-                                <h2 class="text-center pb-3">
-                                    {{ request.user.username.capitalize }}
-                                </h2>
-
-                            </div>
-
-                            <hr class="my-4">
-                            <div class="row">
-                                <a href="{% url 'userprofile' %}" class="col-md-12 py-2"><i
-                                        class="bi bi-person-fill mx-2"></i>My
-                                    Profile</a>
-                                <a href="{% url 'my_recommendations' %}" class="col-md-12 py-2"><i
-                                        class="bi bi-file-text mx-2"></i>My
-                                    Recommendations</a>
-                                <a href="{% url 'feedback' %}" class="col-md-12 py-2"><i
-                                        class="bi bi-file-text mx-2"></i>Feedback</a>
-                                <a href="{% url 'my_history' %}" class="col-md-12 py-2"><i
-                                        class="bi bi-file-text mx-2"></i>History</a>
-                                <a href="{% url 'logout' %}" class="col-md-12 py-2"><i
-                                        class="bi bi-arrow-up-right mx-2"></i>Logout</a>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-9 order-xl-2">
-                <div class="card bg-secondary shadow">
-                    <div class="card-header bg-white border-0">
-                        <div class="row align-items-center">
-                            <div class="col-8">
-                                <h3 class="mb-0">Add Field of Interest</h3>
-                            </div>
-
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <!-- Form -->
-                        {{p_form.non_field_errors}}
-                        <form action="" method="POST" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            {% if messages %}
-                            {% for message in messages %}
-                            <div class="alert alert-{{message.tags}}"
-                                style="background-color: #5E72E4;padding: 15px 20px;margin-bottom: 20px;color: white;border-radius: 7px;">
-                                {{message}}
-                            </div>
-
-                            {% endfor %}
-                            {% endif %}
-                            {% block content %}{% endblock %}
-                            <div class="pl-lg-4">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="col-lg-6">
-                                            <div class="form-group focused">
-                                                <label class="form-control-label" for="fieldOfInterest">Field of
-                                                    Interest</label>
-                                                <input type="text" name="fieldOfInterest" maxlength="30"
-                                                    id="fieldOfInterest" class="form-control form-control-alternative"
-                                                    value="">
-
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-lg-6 mx-3">
-                                        <input type="submit" value="Save" class="btn btn-primary">
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <datalist id="subject-options">
+      {% for s in all_subjects %}<option value="{{ s.name }}">{% endfor %}
+    </datalist>
+  </form>
 </div>
 
+<div class="panel">
+  <h2 class="panel-title">Not sure where to start?</h2>
+  <p class="hint">Tap a subject to add it. You can remove it any time.</p>
 
+  {% if popular_interests %}
+  <h3 class="mini-title">Popular in our scholarships</h3>
+  <div class="chip-list mb-3">
+    {% for s in popular_interests %}
+    <form method="post"><input type="hidden" name="fieldOfInterest" value="{{ s }}">{% csrf_token %}
+      <button type="submit" class="chip chip-suggest"><i class="bi bi-plus"></i> {{ s }}</button></form>
+    {% endfor %}
+  </div>
+  {% endif %}
 
+  <h3 class="mini-title">Starter ideas</h3>
+  <div class="chip-list">
+    {% for s in starter_interests %}
+    <form method="post"><input type="hidden" name="fieldOfInterest" value="{{ s }}">{% csrf_token %}
+      <button type="submit" class="chip chip-suggest"><i class="bi bi-plus"></i> {{ s }}</button></form>
+    {% endfor %}
+  </div>
 
-<script>
-    function openPage() {
-        var x = document.getElementById("search").value;
-
-        if (x === "berlin" || x === "Berlin") {
-            window.open("/berlin-scholarship.html");
-        }
-        if (x === "canada" || x === "Canada") {
-            window.open("/canada-scholarship.html");
-        }
-        if (x === "phd" || x === "PhD" || x === "PHD") {
-            window.open("/phd-list.html");
-        }
-    }
-
-
-</script>
+  <div class="tip mt-4">
+    <i class="bi bi-lightbulb"></i>
+    <span><strong>Tip:</strong> 3 to 5 focused interests work best. "Renewable Energy" helps more than a broad one like "Science".</span>
+  </div>
+</div>
 {% endblock %}
-
-
-
-{% else %}
-<h1> You are not logged in </h1>
-
-
-{% endif %}

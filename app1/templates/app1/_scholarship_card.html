@@ -1,0 +1,22 @@
+{% load scholarship_tags %}
+{# One scholarship in a list. Expects `scholarship`. Shared by every listing page. #}
+<article class="sch-card">
+  <a href="{% url 'scholarship_detail' scholarship.pk %}" class="sch-card-media" tabindex="-1" aria-hidden="true">
+    <img src="{% scholarship_image scholarship %}" alt="">
+  </a>
+  <div class="sch-card-body">
+    <h3><a href="{% url 'scholarship_detail' scholarship.pk %}">{{ scholarship.title }}</a></h3>
+    {% if scholarship.scholarship_details %}<p class="sch-card-text">{{ scholarship.scholarship_details|truncatechars:180 }}</p>{% endif %}
+    <ul class="sch-card-meta">
+      {% if scholarship.degree %}<li><i class="bi bi-mortarboard"></i>{{ scholarship.degree }}</li>{% endif %}
+      {% if scholarship.country %}<li><i class="bi bi-geo-alt"></i>{{ scholarship.country }}</li>{% endif %}
+      {% if scholarship.tution_structure %}<li><i class="bi bi-cash-coin"></i>{{ scholarship.tution_structure }}</li>{% endif %}
+      {% if scholarship.subject %}<li><i class="bi bi-book"></i>{{ scholarship.subject|truncatechars:50 }}</li>{% endif %}
+      {% if scholarship.apply_date %}<li><i class="bi bi-calendar-event"></i>{{ scholarship.apply_date|truncatechars:50 }}</li>{% endif %}
+    </ul>
+    <div class="sch-card-actions">
+      <a href="{% url 'scholarship_detail' scholarship.pk %}" class="btn btn-sm btn-outline-brand">View details</a>
+      {% if scholarship.link %}<a href="{{ scholarship.link }}" class="btn btn-sm btn-brand" target="_blank" rel="noopener noreferrer">Official website <i class="bi bi-box-arrow-up-right"></i></a>{% endif %}
+    </div>
+  </div>
+</article>
