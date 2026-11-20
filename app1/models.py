@@ -330,3 +330,24 @@ class Institute(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class JobRun(models.Model):
+    """One run of a scheduled job. The (job, run_date) pair is unique, which is what stops
+    a daily job running twice, even when several web workers each run a scheduler."""
+
+    RUNNING, SUCCESS, FAILED = "running", "success", "failed"
+
+    job = models.CharField(max_length=50)
+    run_date = models.DateField()
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=10, default=RUNNING)
+    output = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ("-started_at",)
+        constraints = [models.UniqueConstraint(fields=["job", "run_date"], name="unique_job_per_day")]
+
+    def __str__(self):
+        return f"{self.job} {self.run_date} ({self.status})"

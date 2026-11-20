@@ -1,9 +1,15 @@
-{# Sort dropdown. Keeps current filters (filter_fields) as hidden inputs. #}
+{# Sort dropdown + "eligible only" switch. Keeps current filters (filter_fields) as hidden inputs. #}
 <form method="get" class="sort-form">
-  {% for k, v in filter_fields.items %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+  {% for k, v in filter_fields.items %}{% if k != "eligible" %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
+  {% if user.is_authenticated %}
+  <div class="form-check form-switch eligible-switch">
+    <input class="form-check-input js-autosubmit" type="checkbox" role="switch" id="eligible" name="eligible" value="1" {% if eligible_only %}checked{% endif %}>
+    <label class="form-check-label" for="eligible">Only ones I can apply for</label>
+  </div>
+  {% endif %}
   <label for="sort" class="visually-hidden">Sort by</label>
-  <select name="sort" id="sort" class="form-select form-select-sm" onchange="this.form.submit()">
+  <select name="sort" id="sort" class="form-select form-select-sm js-autosubmit">
     {% for value, label in sort_options %}<option value="{{ value }}" {% if value == sort %}selected{% endif %}>{{ label }}</option>{% endfor %}
   </select>
-  <noscript><button type="submit" class="btn btn-sm btn-outline-brand">Sort</button></noscript>
+  <noscript><button type="submit" class="btn btn-sm btn-outline-brand">Apply</button></noscript>
 </form>

@@ -9,6 +9,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core import signing
+from django.conf import settings
+from django.contrib.auth import views as auth_views
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
@@ -23,7 +25,8 @@ from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from . import recommender
+from . import eligibility as elig
+from . import geo, recommender
 from .models import (
     Country, Feedback, FieldOfInterest, History, Program, Recommendation,
     SavedScholarship, Scholarship, TypeOfDegree,
@@ -70,6 +73,13 @@ def site_degree_types():
 
 
 SORT_OPTIONS = [("", "Relevance / A–Z"), ("deadline", "Closing soon"), ("newest", "Recently added")]
+
+
+def apply_eligible_filter(request, queryset):
+    """?eligible=1 hides scholarships the logged-in user clearly can't apply for."""
+    if request.GET.get("eligible") == "1" and request.user.is_authenticated:
+        return queryset.exclude(pk__in=elig.blocked_ids(queryset, request.user.profile)), True
+    return queryset, False
 
 
 def apply_sort(request, queryset):
@@ -133,8 +143,10 @@ def search_results(request):
     if not filters:
         return redirect("home")
 
-    results, sort = apply_sort(request, Scholarship.objects.filter(**filters))
+    results, eligible_only = apply_eligible_filter(request, Scholarship.objects.filter(**filters))
+    results, sort = apply_sort(request, results)
     filter_qs = {k: v for k, v in params.items() if v}
+    state = _list_state(sort, eligible_only, filter_qs)
     context = {
         **params,
         **search_dropdowns(),
@@ -142,8 +154,9 @@ def search_results(request):
         "number_of_scholarships": results.count(),
         "sort": sort,
         "sort_options": SORT_OPTIONS,
-        "filter_fields": filter_qs,
-        "qs": urlencode({**filter_qs, **({"sort": sort} if sort else {})}),
+        "eligible_only": eligible_only,
+        "filter_fields": {k: v for k, v in state.items() if k != "sort"},
+        "qs": urlencode(state),
     }
     return render(request, "app1/scholarship_results.html", context)
 
@@ -164,7 +177,9 @@ def subjects(request):
 
 
 def _category(request, template, heading, preset, **lookup):
-    results, sort = apply_sort(request, Scholarship.objects.filter(**lookup))
+    results, eligible_only = apply_eligible_filter(request, Scholarship.objects.filter(**lookup))
+    results, sort = apply_sort(request, results)
+    state = _list_state(sort, eligible_only)
     return render(request, template, {
         **search_dropdowns(),
         **preset,
@@ -173,7 +188,9 @@ def _category(request, template, heading, preset, **lookup):
         "number_of_scholarships": results.count(),
         "sort": sort,
         "sort_options": SORT_OPTIONS,
-        "qs": urlencode({"sort": sort}) if sort else "",
+        "eligible_only": eligible_only,
+        "filter_fields": {k: v for k, v in state.items() if k != "sort"},
+        "qs": urlencode(state),
     })
 
 
@@ -200,14 +217,28 @@ def scholarshipdegree3(request):
     return redirect("category_degree", degree="Masters")
 
 
+def _list_state(sort, eligible_only, extra=None):
+    """Query-string pieces that pagination and the toolbar must keep."""
+    fields = dict(extra or {})
+    if sort:
+        fields["sort"] = sort
+    if eligible_only:
+        fields["eligible"] = "1"
+    return fields
+
+
 def scholarshipdata(request):
-    results, sort = apply_sort(request, Scholarship.objects.all())
+    results, eligible_only = apply_eligible_filter(request, Scholarship.objects.all())
+    results, sort = apply_sort(request, results)
+    state = _list_state(sort, eligible_only)
     return render(request, "app1/events.html", {
         **search_dropdowns(),
         "scholarships": paginate(request, results),
         "sort": sort,
         "sort_options": SORT_OPTIONS,
-        "qs": urlencode({"sort": sort}) if sort else "",
+        "eligible_only": eligible_only,
+        "filter_fields": {k: v for k, v in state.items() if k != "sort"},
+        "qs": urlencode(state),
     })
 
 
@@ -218,7 +249,10 @@ def scholarship_detail(request, pk):
     ids = [m.scholarship_id for m in matches if m.scholarship_id != scholarship.pk][:4]
     by_id = Scholarship.objects.in_bulk(ids)
     similar = [by_id[i] for i in ids if i in by_id]
-    return render(request, "app1/scholarship_detail.html", {"scholarship": scholarship, "similar": similar})
+    eligibility_result = elig.check(scholarship, request.user.profile) if request.user.is_authenticated else None
+    return render(request, "app1/scholarship_detail.html", {
+        "scholarship": scholarship, "similar": similar, "eligibility": eligibility_result,
+    })
 
 
 def scholarshipdatadetial(request, id):
@@ -277,9 +311,15 @@ def contact(request):
 
 # ---------- accounts ----------
 
+REGISTRATIONS_PER_HOUR = 5
+
+
 def registration(request):
     if request.method != "POST":
         return render(request, "app1/registration.html")
+    if rate_limited(request, "register", REGISTRATIONS_PER_HOUR, 60 * 60):
+        messages.error(request, "Too many sign-ups from your network. Please try again in an hour.")
+        return render(request, "app1/registration.html", status=429)
 
     username = (request.POST.get("username") or "").strip()
     first_name = (request.POST.get("first_name") or "").strip()
@@ -327,14 +367,15 @@ def registration(request):
 
 
 def verify(request, token):
-    from .models import Profile
+    from .models import Profile, new_token
 
     profile = Profile.objects.filter(email_token=token).first()
     if profile is None:
         messages.error(request, "That verification link is invalid or has already been used.")
         return redirect("login")
     profile.is_verified = True
-    profile.save(update_fields=["is_verified"])
+    profile.email_token = new_token()  # each link works once
+    profile.save(update_fields=["is_verified", "email_token"])
     messages.success(request, "Account verified. You can now log in.")
     return redirect("login")
 
@@ -346,7 +387,26 @@ LOGIN_LOCKOUT_SECONDS = 15 * 60
 
 
 def _client_ip(request):
+    """The visitor's IP. Behind a host's proxy, REMOTE_ADDR is the proxy, so read the
+    entry the proxy added to X-Forwarded-For (TRUSTED_PROXY_COUNT says how many proxies).
+    Entries further left are set by the client and can be faked, so they're ignored."""
+    hops = settings.TRUSTED_PROXY_COUNT
+    forwarded = [p.strip() for p in request.META.get("HTTP_X_FORWARDED_FOR", "").split(",") if p.strip()]
+    if hops and len(forwarded) >= hops:
+        return forwarded[-hops]
     return request.META.get("REMOTE_ADDR", "")
+
+
+def rate_limited(request, scope, limit, window):
+    """Count one hit for this visitor; True once they exceed `limit` within `window` seconds."""
+    key = f"rate:{scope}:{_client_ip(request)}"
+    cache.add(key, 0, window)
+    try:
+        count = cache.incr(key)
+    except ValueError:
+        cache.set(key, 1, window)
+        count = 1
+    return count > limit
 
 
 def _throttle_keys(request, identifier):
@@ -448,10 +508,18 @@ def _parse_profile_form(post, user):
     """Validate the edit-profile form. Returns (cleaned_data, errors)."""
     data, errors = {}, []
 
-    for field in ("first_name", "last_name", "highest_qualification", "nationality"):
+    for field in ("first_name", "last_name", "highest_qualification"):
         value = (post.get(field) or "").strip()
         if value:
             data[field] = value
+
+    nationality = (post.get("nationality") or "").strip()
+    if nationality:
+        country = geo.normalise_country(nationality)
+        if country:
+            data["nationality"] = country
+        else:
+            errors.append("Please choose your nationality from the list.")
 
     email = (post.get("email") or "").strip().lower()
     if email:
@@ -519,7 +587,10 @@ def showprofile(request):
 def showformdata(request):
     """Edit profile. Always edits the logged-in user (the old version trusted a hidden email field)."""
     if request.method != "POST":
-        return render(request, "app1/profile_edit.html")
+        return render(request, "app1/profile_edit.html", {
+            "country_choices": geo.all_countries(),
+            "current_nationality": geo.normalise_country(request.user.profile.nationality) or request.user.profile.nationality,
+        })
 
     user, profile = request.user, request.user.profile
     data, errors = _parse_profile_form(request.POST, user)
@@ -720,10 +791,16 @@ def my_recommendations(request):
 @login_required
 def recommendation_results(request, pk):
     history = get_object_or_404(History, pk=pk, profile=request.user.profile)
-    recs = (
+    recs = list(
         Recommendation.objects.filter(history=history, scholarship__is_active=True)
         .select_related("scholarship").order_by("rank")
     )
+    show_all = request.GET.get("all") == "1"
+    profile = request.user.profile
+    blocked = {r.pk for r in recs if elig.check(r.scholarship, profile).is_blocked}
+    hidden_count = 0 if show_all else len(blocked)
+    if not show_all:
+        recs = [r for r in recs if r.pk not in blocked]
     top_score = recs[0].score if recs else 0
     page = paginate(request, recs)
     for rec in page:
@@ -732,7 +809,10 @@ def recommendation_results(request, pk):
     return render(request, "app1/recommendation_results.html", {
         "history": history,
         "recommendations": page,
-        "total": recs.count(),
+        "total": len(recs),
+        "hidden_count": hidden_count,
+        "show_all": show_all,
+        "has_nationality": bool(profile.nationality),
         "suggested_degree": "" if history.target_degree else suggested_degree(history.query_text),
     })
 
@@ -907,3 +987,37 @@ def unsubscribe_reminders(request, token):
 
     Profile.objects.filter(user_id=user_pk).update(email_reminders=False)
     return render(request, "app1/unsubscribed.html")
+
+
+# ---------- forgotten password ----------
+
+
+PASSWORD_RESETS_PER_HOUR = 5
+
+
+class PasswordResetView(auth_views.PasswordResetView):
+    """Django's reset flow (one-time, 1-hour links; the page never says whether an email
+    has an account) plus a per-visitor limit so it can't be used to flood an inbox."""
+
+    template_name = "app1/password_reset_form.html"
+    email_template_name = "emails/password_reset.txt"
+    subject_template_name = "emails/password_reset_subject.txt"
+
+    def post(self, request, *args, **kwargs):
+        if rate_limited(request, "password-reset", PASSWORD_RESETS_PER_HOUR, 60 * 60):
+            messages.error(request, "Too many reset requests. Please try again in an hour.")
+            return self.render_to_response(self.get_context_data(form=self.get_form()), status=429)
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        from urllib.parse import urlsplit
+        parts = urlsplit(settings.SITE_URL)
+        self.extra_email_context = {"site_url": settings.SITE_URL}
+        form.save(
+            domain_override=parts.netloc, use_https=parts.scheme == "https",
+            subject_template_name=self.subject_template_name,
+            email_template_name=self.email_template_name,
+            from_email=settings.DEFAULT_FROM_EMAIL, request=self.request,
+            extra_email_context=self.extra_email_context,
+        )
+        return redirect(self.get_success_url())

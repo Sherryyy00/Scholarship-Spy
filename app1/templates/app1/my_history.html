@@ -4,7 +4,7 @@
 {% block subheading %}Your past recommendation searches. Only you can see these.{% endblock %}
 {% block actions %}
 {% if user_history %}
-<form method="post" action="{% url 'clear_history' %}" onsubmit="return confirm('Delete all of your history? This cannot be undone.');">
+<form method="post" action="{% url 'clear_history' %}" data-confirm="Delete all of your history? This cannot be undone.">
   {% csrf_token %}
   <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i> Clear all</button>
 </form>

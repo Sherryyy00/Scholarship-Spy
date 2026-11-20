@@ -4,7 +4,7 @@
 {% block subheading %}Tell us about yourself in your own words, upload your CV, or both.{% endblock %}
 
 {% block account %}
-<form method="post" enctype="multipart/form-data" class="panel" id="rec-form" novalidate>
+<form method="post" enctype="multipart/form-data" class="panel" id="rec-form" data-min-length="{{ min_length }}" data-mode="{{ form.mode }}" novalidate>
   {% csrf_token %}
 
   <div class="input-choice" role="tablist">
@@ -81,43 +81,4 @@
 </div>
 {% endif %}
 
-<script>
-(function () {
-  var choices = document.querySelectorAll('.input-choice .choice');
-  choices.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      choices.forEach(function (b) {
-        var on = b === btn;
-        b.classList.toggle('active', on);
-        b.setAttribute('aria-selected', on);
-        document.getElementById(b.dataset.target).hidden = !on;
-      });
-    });
-  });
-
-  var cv = document.getElementById('id_cv');
-  cv.addEventListener('change', function () {
-    var name = cv.files.length ? cv.files[0].name : 'Choose your CV';
-    document.getElementById('cv-name').textContent = name;
-  });
-
-  var text = document.getElementById('id_statement');
-  var counter = document.getElementById('char-count');
-  var min = {{ min_length }};
-  function update() {
-    var n = text.value.trim().length;
-    counter.textContent = n ? n + ' / ' + min + (n >= min ? ' ✓' : '') : '';
-  }
-  text.addEventListener('input', update);
-  update();
-
-  document.getElementById('rec-form').addEventListener('submit', function () {
-    var btn = document.getElementById('rec-submit');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Finding matches…';
-  });
-
-  {% if form.mode == 'cv' %}choices[1].click();  // reopen the CV tab after a failed upload{% endif %}
-})();
-</script>
 {% endblock %}

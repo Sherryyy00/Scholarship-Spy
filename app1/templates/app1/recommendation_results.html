@@ -32,6 +32,18 @@
   {% endif %}
 </div>
 
+{% if hidden_count %}
+<div class="notice">
+  <i class="bi bi-funnel"></i>
+  <span>We hid <strong>{{ hidden_count }}</strong> match{{ hidden_count|pluralize:"es" }} you don't seem eligible for (nationality, degree level or grades).</span>
+  <a href="?all=1" class="small-link ms-auto">Show all</a>
+</div>
+{% elif show_all %}
+<div class="notice"><i class="bi bi-eye"></i><span>Showing every match, including ones you may not be eligible for.</span><a href="?" class="small-link ms-auto">Hide those</a></div>
+{% elif not has_nationality %}
+<div class="notice"><i class="bi bi-person-vcard"></i><span>Add your nationality to your profile and we'll hide scholarships you can't apply for.</span><a href="{% url 'userprofileedit' %}" class="small-link ms-auto">Add it</a></div>
+{% endif %}
+
 {% if recommendations %}
   {% for rec in recommendations %}
   {% with s=rec.scholarship %}
@@ -52,7 +64,7 @@
         {% if s.country %}<span><i class="bi bi-geo-alt"></i> {{ s.country }}</span>{% endif %}
         {% if s.university_name %}<span><i class="bi bi-building"></i> {{ s.university_name|truncatechars:60 }}</span>{% endif %}
       </div>
-      {% deadline_badge s %}
+      <div class="badge-row">{% deadline_badge s %}{% eligibility_badge s %}</div>
       {% if rec.matched_terms_list %}
       <p class="why"><strong>Why it matched:</strong>
         {% for t in rec.matched_terms_list %}<span class="term">{{ t }}</span>{% endfor %}
@@ -70,11 +82,11 @@
   {% if recommendations.has_other_pages %}
   <nav aria-label="Results pages">
     <ul class="pagination justify-content-center mt-4">
-      {% if recommendations.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ recommendations.previous_page_number }}">Previous</a></li>{% endif %}
+      {% if recommendations.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ recommendations.previous_page_number }}{% if show_all %}&all=1{% endif %}">Previous</a></li>{% endif %}
       {% for n in recommendations.paginator.page_range %}
-      <li class="page-item {% if n == recommendations.number %}active{% endif %}"><a class="page-link" href="?page={{ n }}">{{ n }}</a></li>
+      <li class="page-item {% if n == recommendations.number %}active{% endif %}"><a class="page-link" href="?page={{ n }}{% if show_all %}&all=1{% endif %}">{{ n }}</a></li>
       {% endfor %}
-      {% if recommendations.has_next %}<li class="page-item"><a class="page-link" href="?page={{ recommendations.next_page_number }}">Next</a></li>{% endif %}
+      {% if recommendations.has_next %}<li class="page-item"><a class="page-link" href="?page={{ recommendations.next_page_number }}{% if show_all %}&all=1{% endif %}">Next</a></li>{% endif %}
     </ul>
   </nav>
   {% endif %}

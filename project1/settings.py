@@ -6,6 +6,7 @@ All secrets and environment-specific values come from environment variables
 """
 
 import os
+import sys
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -42,6 +43,11 @@ if not SECRET_KEY:
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
+# Run the daily scrape and reminder emails automatically inside the web process
+# (see app1/jobs.py). On by default while developing; on a host you can keep it on
+# (jobs still run once a day) or switch it off and use `run_scheduler` / cron instead.
+SCHEDULER_AUTOSTART = env_bool("SCHEDULER_AUTOSTART", DEBUG)
+
 # Public base URL, used in emails (e.g. the account verification link).
 SITE_URL = os.environ.get("SITE_URL", "http://127.0.0.1:8000").rstrip("/")
 
@@ -65,6 +71,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "app1.security.SecurityHeadersMiddleware",
 ]
 
 ROOT_URLCONF = "project1.urls"
@@ -144,13 +151,52 @@ EMAIL_BACKEND = (
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "noreply@scholarshipspy.local")
 
 
+# Admin lives at a non-obvious address in production (set DJANGO_ADMIN_URL, e.g. "control-7f3a/").
+ADMIN_URL = os.environ.get("DJANGO_ADMIN_URL", "admin/").strip("/") + "/"
+
+# How many proxies sit in front of the app (Render/Railway/Heroku: 1). Used to find
+# the visitor's real IP for login and sign-up rate limits.
+TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", "0"))
+
+# Rate limits and login lockouts are stored in the cache. In production use the
+# database so every gunicorn worker shares the same counters
+# (`python manage.py createcachetable` creates the table; the Procfile runs it).
+CACHES = {
+    "default": (
+        {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+        if DEBUG or "test" in sys.argv
+        else {"BACKEND": "django.core.cache.backends.db.DatabaseCache", "LOCATION": "django_cache"}
+    )
+}
+
+# Largest request body accepted (the CV limit is 5 MB; this leaves room for the form).
+MAX_REQUEST_BYTES = 6 * 1024 * 1024
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 200
+
+# Password reset links stay valid for 1 hour.
+PASSWORD_RESET_TIMEOUT = 60 * 60
+
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 14  # two weeks
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
+
+# Full origins (with https://) allowed to post forms, e.g. "https://scholarshipspy.onrender.com".
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+
 # Production hardening, switched on automatically when DEBUG is off.
 if not DEBUG:
     SESSION_COOKIE_SECURE = env_bool("DJANGO_SECURE_COOKIES", True)
     CSRF_COOKIE_SECURE = env_bool("DJANGO_SECURE_COOKIES", True)
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_REFERRER_POLICY = "same-origin"
-    X_FRAME_OPTIONS = "DENY"
+    # Hosts like Render/Railway terminate HTTPS at a proxy and pass this header on.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = env_bool("DJANGO_SSL_REDIRECT", True)
+    # Start with 1 day; raise to 31536000 (a year) once HTTPS is confirmed working.
+    SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", "86400"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("DJANGO_HSTS_SUBDOMAINS", False)
 
 
 LOGGING = {
