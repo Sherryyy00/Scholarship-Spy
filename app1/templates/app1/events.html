@@ -7,6 +7,7 @@
   <div class="col-lg-8">
     <div class="list-toolbar">
       <span>{{ scholarships.paginator.count }} scholarship{{ scholarships.paginator.count|pluralize }}</span>
+      {% include "app1/_sort_toolbar.html" %}
     </div>
     {% for scholarship in scholarships %}
       {% include "app1/_scholarship_card.html" %}

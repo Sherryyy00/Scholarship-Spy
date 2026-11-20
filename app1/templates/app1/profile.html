@@ -1,4 +1,5 @@
 {% extends "app1/account_base.html" %}
+{% load scholarship_tags %}
 {% block title %}My profile | Scholarship Spy{% endblock %}
 {% block heading %}My profile{% endblock %}
 {% block subheading %}Your details help us find scholarships you're eligible for.{% endblock %}
@@ -19,6 +20,25 @@
     <div><dt>CGPA</dt><dd>{{ user.profile.cgpa|default:"—" }}</dd></div>
     <div><dt>Age</dt><dd>{{ user.profile.age|default:"—" }}</dd></div>
   </dl>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2 class="panel-title">Upcoming deadlines</h2>
+    <a href="{% url 'my_applications' %}" class="small-link">My applications{% if saved_count %} ({{ saved_count }}){% endif %}</a>
+  </div>
+  {% if upcoming %}
+  <ul class="item-list">
+    {% for item in upcoming %}
+    <li>
+      <a href="{% url 'scholarship_detail' item.scholarship.pk %}">{{ item.scholarship.title }}</a>
+      {% deadline_badge item.scholarship %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="hint mb-0">{% if saved_count %}None of your saved scholarships have a deadline coming up.{% else %}Save scholarships with the <i class="bi bi-bookmark"></i> button to see their deadlines here.{% endif %}</p>
+  {% endif %}
 </div>
 
 <div class="panel-grid">

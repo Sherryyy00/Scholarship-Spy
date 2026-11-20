@@ -27,6 +27,7 @@
                 <li><h6 class="dropdown-header">Hi, {{ user.first_name|default:user.username }}</h6></li>
                 <li><a class="dropdown-item" href="{% url 'userprofile' %}"><i class="bi bi-person me-2"></i>My profile</a></li>
                 <li><a class="dropdown-item" href="{% url 'my_recommendations' %}"><i class="bi bi-stars me-2"></i>My recommendations</a></li>
+                <li><a class="dropdown-item" href="{% url 'my_applications' %}"><i class="bi bi-bookmark me-2"></i>My applications</a></li>
                 <li><a class="dropdown-item" href="{% url 'my_history' %}"><i class="bi bi-clock-history me-2"></i>History</a></li>
                 <li><a class="dropdown-item" href="{% url 'feedback' %}"><i class="bi bi-chat-left-text me-2"></i>Feedback</a></li>
                 <li><hr class="dropdown-divider"></li>

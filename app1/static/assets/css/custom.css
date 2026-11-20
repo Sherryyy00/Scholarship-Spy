@@ -466,3 +466,57 @@ fieldset legend.form-label { font-size: 13px; }
 .degree-card:hover .degree-foot i { transform: translateX(3px); }
 @media (max-width: 767px) { .detail-grid > .span-wide { grid-column: 1 / -1; } }
 .detail-grid dd { overflow-wrap: break-word; }
+
+/* =========================================================================
+   Deadlines, saving and the application tracker
+   ========================================================================= */
+.dl-badge { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; margin-bottom: 8px; }
+.dl-urgent { background: #FEECE6; color: #B42318; }
+.dl-soon { background: #FFF4DE; color: #93600B; }
+.dl-later { background: var(--brand-50); color: var(--brand-dark); }
+.dl-closed { background: #F2F4F7; color: var(--muted); }
+.item-list .dl-badge { margin: 0; flex: 0 0 auto; }
+
+.btn-save { background: #fff; border: 1px solid var(--border-strong); color: var(--text-2); }
+.btn-save:hover { border-color: var(--brand); color: var(--brand-dark); background: var(--brand-50); }
+.btn-save.is-saved { background: var(--brand-50); border-color: var(--brand-100); color: var(--brand); }
+.btn-save.is-saved i { color: var(--accent); }
+.save-form { margin: 0; display: inline-flex; }
+.sch-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.sch-card-head .btn-save { width: 34px; padding: 0; flex: 0 0 34px; }
+.match-body .btn-save { width: 30px; height: 28px; padding: 0; }
+.detail-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+.detail-actions .dl-badge { margin: 0; }
+
+.sort-form { margin: 0; }
+.sort-form .form-select-sm { height: 34px; font-size: 13px; border-radius: 8px; min-width: 170px; }
+
+/* Tracker board */
+.board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.board-col { background: #EFF2F5; border-radius: var(--radius-lg); padding: 12px; min-height: 120px; }
+.board-col-head { display: flex; justify-content: space-between; align-items: center; padding: 2px 4px 10px; }
+.board-col-head h2 { font-size: 13px; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 8px; color: var(--text); }
+.board-count { font-size: 12px; font-weight: 600; color: var(--muted); background: #fff; border-radius: 6px; padding: 1px 8px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.status-interested { background: #8A9AAB; } .status-preparing { background: var(--accent); } .status-applied { background: var(--brand); }
+.status-interview { background: #7C5CC4; } .status-successful { background: var(--success); } .status-unsuccessful { background: #C2410C; }
+.board-empty { font-size: 13px; color: var(--muted); text-align: center; padding: 14px 0 6px; margin: 0; }
+.track-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+.track-card:last-child { margin-bottom: 0; }
+.track-title { display: block; font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.4; margin-bottom: 2px; }
+.track-title:hover { color: var(--brand); }
+.track-meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.track-status .form-select-sm { height: 32px; font-size: 13px; border-radius: 8px; }
+.track-notes { margin-top: 10px; }
+.track-notes summary { font-size: 12px; font-weight: 600; color: var(--brand); cursor: pointer; }
+.track-notes textarea { margin-top: 8px; font-size: 13px; }
+.track-foot { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.track-foot form { margin: 0; }
+@media (max-width: 1199px) { .board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 575px) { .board { grid-template-columns: 1fr; } }
+.form-switch .form-check-input:checked { background-color: var(--brand); border-color: var(--brand); }
+.form-check-label { font-size: 14px; color: var(--text-2); }
+.track-notes summary { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; list-style: none; }
+.track-notes summary::-webkit-details-marker { display: none; }
+.track-notes[open] summary { white-space: normal; }
+.sch-card-body .dl-badge, .match-body .dl-badge, .track-card .dl-badge { align-self: flex-start; width: auto; }

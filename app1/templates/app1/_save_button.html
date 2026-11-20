@@ -1,0 +1,20 @@
+{# Bookmark button for `scholarship`. Uses saved_ids from the context processor. Add `compact=1` for icon-only. #}
+{% if user.is_authenticated %}
+<form method="post" action="{% url 'toggle_saved' scholarship.pk %}" class="save-form">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  {% if scholarship.pk in saved_ids %}
+  <button type="submit" class="btn btn-sm btn-save is-saved" aria-pressed="true" title="Remove from my applications">
+    <i class="bi bi-bookmark-fill"></i>{% if not compact %}<span>Saved</span>{% endif %}
+  </button>
+  {% else %}
+  <button type="submit" class="btn btn-sm btn-save" aria-pressed="false" title="Save to my applications">
+    <i class="bi bi-bookmark"></i>{% if not compact %}<span>Save</span>{% endif %}
+  </button>
+  {% endif %}
+</form>
+{% else %}
+<a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-save" title="Log in to save scholarships">
+  <i class="bi bi-bookmark"></i>{% if not compact %}<span>Save</span>{% endif %}
+</a>
+{% endif %}

@@ -81,6 +81,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "app1.context_processors.assets",
+                "app1.context_processors.saved",
             ],
         },
     },

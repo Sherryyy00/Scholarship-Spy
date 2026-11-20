@@ -1,0 +1,10 @@
+{% extends "app1/listing_base.html" %}
+{% block title %}Unsubscribed | Scholarship Spy{% endblock %}
+{% block heading %}You're unsubscribed{% endblock %}
+{% block subheading %}We won't email you about deadlines any more.{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:560px">
+  <p>Changed your mind? You can turn reminders back on at any time from <a href="{% url 'userprofileedit' %}">Edit profile</a>.</p>
+  <a href="{% url 'home' %}" class="btn btn-outline-brand">Back to Scholarship Spy</a>
+</div>
+{% endblock %}

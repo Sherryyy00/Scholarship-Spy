@@ -112,3 +112,29 @@ def scholarship_image(scholarship):
     if photo:
         return static(f"assets/img/countries/{photo}")
     return generated_thumbnail(scholarship.subject or "", country, scholarship.degree or "")
+
+
+@register.simple_tag
+def deadline_badge(scholarship):
+    """A small coloured badge describing how long is left to apply."""
+    from django.utils.html import format_html
+
+    deadline = getattr(scholarship, "deadline", None)
+    if not deadline:
+        return ""
+    days = scholarship.days_left
+    # Built by hand: strftime's "%-d" (no leading zero) doesn't work on Windows.
+    title = f"{deadline.day} {deadline:%B %Y}" + (" (estimated, check the official site)" if scholarship.deadline_estimated else "")
+    if days < 0:
+        return format_html('<span class="dl-badge dl-closed" title="{}"><i class="bi bi-x-circle"></i> Closed</span>', title)
+    if days == 0:
+        text, tone = "Closes today", "dl-urgent"
+    elif days <= 14:
+        text, tone = f"Closes in {days} day{'s' if days != 1 else ''}", "dl-urgent"
+    elif days <= 45:
+        text, tone = f"Closes {deadline.day} {deadline:%b}", "dl-soon"
+    else:
+        text, tone = f"Closes {deadline.day} {deadline:%b %Y}", "dl-later"
+    if scholarship.deadline_estimated:
+        text += " (est.)"
+    return format_html('<span class="dl-badge {}" title="{}"><i class="bi bi-calendar-event"></i> {}</span>', tone, title, text)
