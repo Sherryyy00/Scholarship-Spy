@@ -147,7 +147,7 @@ def scholarshipdata(request):
 
 
 def scholarship_detail(request, pk):
-    return render(request, "app1/scholarship_detail.html", {"scholarship": get_object_or_404(Scholarship, pk=pk)})
+    return render(request, "app1/scholarship_detail.html", {"scholarship": get_object_or_404(Scholarship.objects, pk=pk)})
 
 
 def scholarshipdatadetial(request, id):

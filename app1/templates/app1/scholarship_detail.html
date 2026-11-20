@@ -146,6 +146,15 @@
                                             <div class="my-1">
                                                 <h2 class="mb-4">Scholarship Description :</h2>
                                                 <p>{{scholarship.scholarship_details}}</p>
+                                                {% if scholarship.attribution or scholarship.last_seen_at %}
+                                                <p class="text-muted small mt-3 mb-0">
+                                                    {% if scholarship.attribution %}Source:
+                                                    {% if scholarship.source_url %}<a href="{{ scholarship.source_url }}" target="_blank" rel="noopener">{{ scholarship.attribution }}</a>{% else %}{{ scholarship.attribution }}{% endif %}.
+                                                    {% endif %}
+                                                    {% if scholarship.last_seen_at %}Last checked {{ scholarship.last_seen_at|date:"j M Y" }}.{% endif %}
+                                                    Always confirm details on the official website.
+                                                </p>
+                                                {% endif %}
 
                                             </div>
                                             <div class="d-flex justify-content-end">
