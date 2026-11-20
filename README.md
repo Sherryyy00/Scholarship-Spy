@@ -81,18 +81,31 @@ Results are *eligible*, *not eligible* (with the reason) or *unknown*. Only clea
 
 ## How the recommender works
 
-It's a content-based recommender built with scikit-learn (`app1/recommender.py`).
+A content-based recommender built with scikit-learn (`app1/recommender.py`):
 
-1. **Indexing.** Each scholarship's title, subject, degree, country, university, eligibility and description become one document. Title and subject count double. The documents are turned into **TF-IDF vectors** using single words and two-word phrases, with English stop words removed and sublinear term frequency.
-2. **Querying.** Your personal statement and your saved fields of interest are turned into a vector with the same vocabulary.
-3. **Ranking.** Scholarships are ranked by **cosine similarity** to your statement. Weak matches are dropped, and the top 20 are saved with their rank and score.
-4. **CVs and statements.** A CV is cleaned the same way and goes through the same pipeline. Common filler words ("year", "university", "experience"...) are ignored so they don't count as matches. If you don't pick a degree level, the app guesses your next one from what you've completed (for example BSc → Masters) and gives those scholarships a small boost. It ignores sentences about what you *want* to study.
-5. **Explaining results.** Each result lists the strongest terms it shares with your text, and results weaker than 10% of the best match are dropped.
-6. **Caching.** The index is built once and kept in memory. Django signals rebuild it whenever a scholarship is added, edited or deleted, so each request stays fast.
+1. **Normalise.** Common abbreviations are expanded ("AI" → artificial intelligence, "CS" → computer science), and words are stemmed so *engineer / engineering* and *renewable / renewables* match.
+2. **Index.** Each scholarship's title and subject (counted double), degree, country, university, eligibility and description become a TF-IDF vector of words and word pairs. English and domain filler words ("year", "university", "experience"...) are removed.
+3. **Typo tolerance.** A character n-gram TF-IDF (30% of the score) catches misspellings like "machne lerning".
+4. **Rank.** The statement and/or CV, plus saved interests, are vectorised the same way. Scholarships are ranked by cosine similarity, and those at the user's likely next degree level get a small boost.
+5. **Explain.** Each result shows the words it shares with the user's text ("Why it matched").
+6. **Cache.** The index is built once and rebuilt automatically when scholarships change.
 
-The tests check that results are accurate. For example, a data science statement must rank the data science scholarship first, and a renewable energy statement must rank the energy scholarship first.
+### Evaluation
 
-> **What changed from v1:** the first version loaded a large GloVe embeddings file on every request and compared the statement to k-means cluster centres. Then it threw that result away and showed the first 20 scholarships in the database. The old research notebooks are still in `notebooks/`.
+Every setting was chosen by measurement (`python manage.py evaluate_recommender`). There are 28 labelled tuning queries (abbreviations, synonyms, typos, look-alike programmes and a full CV) and **16 held-out queries that were never used for tuning**:
+
+| Configuration | Tuning MRR | Held-out MRR | Held-out Hit@3 |
+|---|---|---|---|
+| Plain TF-IDF (v1 of this rewrite) | 0.750 | 0.802 | 87.5% |
+| + abbreviations + stemming | 0.893 | 0.938 | 100% |
+| **+ character n-grams 0.3 (default)** | **0.982** | **0.938** | **100%** |
+| + character n-grams 0.5 | 1.000 | 0.938 | 100% |
+
+Stemming gives the biggest gain on unseen queries. Character n-grams fix typos without hurting held-out results. The higher 0.5 weight was rejected because its perfect tuning score didn't carry over to held-out queries, a sign of overfitting. `tests_recommender_quality.py` fails the build if quality drops below these levels.
+
+**Limitations and next steps.** The corpus is small (21 listings), so these numbers will shift as real data grows. Re-run the evaluation after loading more data. Purely lexical matching can't link related ideas that share no words ("climate" and "solar"). The next step would be a sentence-embedding model (e.g. `all-MiniLM-L6-v2`) blended with TF-IDF, kept only if it improves the held-out score.
+
+> **History:** the original project loaded a large GloVe file on every request and then ignored the result, showing the first 20 scholarships. The old research notebooks are in `notebooks/`.
 
 ## Tech stack
 
@@ -163,7 +176,7 @@ To keep the data fresh, run `python manage.py scrape` once a day. Use cron on a 
 python manage.py test app1
 ```
 
-There are 184 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
+There are 189 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
 
 ## Configuration
 
