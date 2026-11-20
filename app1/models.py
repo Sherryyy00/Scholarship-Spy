@@ -16,6 +16,7 @@ def new_token():
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    email_reminders = models.BooleanField(default=True, help_text="Email me before saved scholarships close")
     age = models.PositiveSmallIntegerField(null=True, blank=True)
     dob = models.DateField(null=True, blank=True)
     highest_qualification = models.CharField(max_length=100, blank=True, default="")
@@ -122,6 +123,9 @@ class Scholarship(models.Model):
     eligibility = models.CharField(max_length=200, blank=True, default="")
     country = models.CharField(max_length=100, blank=True, default="", db_index=True)
     apply_date = models.CharField(max_length=200, blank=True, default="")
+    # Parsed from apply_date on save (see deadlines.py). "estimated" = no year was given.
+    deadline = models.DateField(null=True, blank=True, db_index=True)
+    deadline_estimated = models.BooleanField(default=False)
     scholarship_details = models.TextField(blank=True, default="")
     history = models.ManyToManyField(History, through="Recommendation", blank=True)
 
@@ -155,6 +159,29 @@ class Scholarship(models.Model):
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        from .deadlines import parse_deadline
+
+        parsed, estimated = parse_deadline(self.apply_date)
+        if parsed or not self.deadline or self._apply_date_changed():
+            self.deadline, self.deadline_estimated = parsed, estimated
+        super().save(*args, **kwargs)
+
+    def _apply_date_changed(self):
+        if not self.pk:
+            return True
+        old = Scholarship.all_objects.filter(pk=self.pk).values_list("apply_date", flat=True).first()
+        return old != self.apply_date
+
+    @property
+    def days_left(self):
+        from .deadlines import days_left
+        return days_left(self.deadline)
+
+    @property
+    def is_closed(self):
+        return self.deadline is not None and self.days_left < 0
 
     def search_text(self):
         """Text the recommender indexes. Title and subject are repeated to weight them higher."""
@@ -190,6 +217,46 @@ class ScrapeRun(models.Model):
 
     def __str__(self):
         return f"{self.source} @ {self.started_at:%Y-%m-%d %H:%M} ({self.status})"
+
+
+class SavedScholarship(models.Model):
+    """A scholarship a user has bookmarked, and where they are with their application."""
+
+    INTERESTED = "interested"
+    PREPARING = "preparing"
+    APPLIED = "applied"
+    INTERVIEW = "interview"
+    SUCCESSFUL = "successful"
+    UNSUCCESSFUL = "unsuccessful"
+    STATUS_CHOICES = [
+        (INTERESTED, "Interested"),
+        (PREPARING, "Preparing"),
+        (APPLIED, "Applied"),
+        (INTERVIEW, "Interview"),
+        (SUCCESSFUL, "Successful"),
+        (UNSUCCESSFUL, "Unsuccessful"),
+    ]
+    # Reminders only make sense before you've applied.
+    REMIND_STATUSES = (INTERESTED, PREPARING)
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="saved")
+    scholarship = models.ForeignKey(Scholarship, on_delete=models.CASCADE, related_name="saved_by")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=INTERESTED, db_index=True)
+    notes = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    # Which deadline each reminder was sent for, so a new year's deadline gets fresh reminders.
+    reminded_14_for = models.DateField(null=True, blank=True)
+    reminded_3_for = models.DateField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("scholarship__deadline", "-created_at")
+        constraints = [
+            models.UniqueConstraint(fields=["profile", "scholarship"], name="unique_saved_scholarship"),
+        ]
+
+    def __str__(self):
+        return f"{self.profile.user.username}: {self.scholarship.title} ({self.status})"
 
 
 class Recommendation(models.Model):
