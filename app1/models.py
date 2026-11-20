@@ -46,10 +46,22 @@ class Profile(models.Model):
 
 
 class History(models.Model):
-    """One personal statement a user asked recommendations for."""
+    """One recommendation request: a personal statement, a CV, or both."""
+
+    INPUT_STATEMENT = "statement"
+    INPUT_CV = "cv"
+    INPUT_BOTH = "both"
+    INPUT_CHOICES = [(INPUT_STATEMENT, "Personal statement"), (INPUT_CV, "CV"), (INPUT_BOTH, "Statement and CV")]
 
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    personal_statement = models.TextField()
+    # The statement as typed. For CV-only requests this is empty.
+    personal_statement = models.TextField(blank=True, default="")
+    # Cleaned text extracted from an uploaded CV. The file itself is never stored.
+    cv_text = models.TextField(blank=True, default="")
+    cv_filename = models.CharField(max_length=255, blank=True, default="")
+    input_type = models.CharField(max_length=10, choices=INPUT_CHOICES, default=INPUT_STATEMENT)
+    target_degree = models.CharField(max_length=20, blank=True, default="")
+    target_country = models.CharField(max_length=100, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -57,7 +69,19 @@ class History(models.Model):
         verbose_name_plural = "histories"
 
     def __str__(self):
-        return self.personal_statement[:50]
+        return self.summary
+
+    @property
+    def summary(self):
+        """Short label for lists: the start of the statement, or the CV file name."""
+        if self.personal_statement:
+            text = self.personal_statement
+            return text if len(text) <= 80 else text[:77].rsplit(" ", 1)[0] + "…"
+        return f"CV: {self.cv_filename}" if self.cv_filename else "Recommendation"
+
+    @property
+    def query_text(self):
+        return " ".join(t for t in (self.personal_statement, self.cv_text) if t)
 
     @property
     def top_scholarships(self):
@@ -175,6 +199,12 @@ class Recommendation(models.Model):
     scholarship = models.ForeignKey(Scholarship, on_delete=models.CASCADE)
     rank = models.PositiveSmallIntegerField()
     score = models.FloatField()
+    # A few words the statement/CV and the scholarship have in common, to explain the match.
+    matched_terms = models.CharField(max_length=200, blank=True, default="")
+
+    @property
+    def matched_terms_list(self):
+        return [t for t in self.matched_terms.split("|") if t]
 
     class Meta:
         ordering = ("history", "rank")
@@ -215,6 +245,8 @@ class Feedback(models.Model):
     emoji = models.CharField(max_length=100, blank=True, default="")
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
+    # Only approved feedback is shown publicly on the home page. Approve it in the admin.
+    is_approved = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         ordering = ("-created",)
