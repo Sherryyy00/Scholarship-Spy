@@ -34,6 +34,7 @@ def due_reminders(today=None):
         .filter(
             status__in=SavedScholarship.REMIND_STATUSES,
             profile__email_reminders=True,
+            profile__is_verified=True,  # never email an address nobody has confirmed
             scholarship__is_active=True,
             scholarship__deadline__gte=today,
             scholarship__deadline__lte=today + timedelta(days=FIRST_REMINDER_DAYS),

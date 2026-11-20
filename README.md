@@ -73,6 +73,11 @@ Results are *eligible*, *not eligible* (with the reason) or *unknown*. Only clea
 - Login accepts a username or email and locks out after 5 failed attempts for 15 minutes. Logging out requires a POST.
 - Users can delete individual searches, clear their whole history, or delete their account and all of its data.
 - New feedback appears on the home page only after an admin approves it.
+- **Forgotten password:** one-time links that expire after an hour. The page never reveals whether an email has an account.
+- **Rate limits:** sign-ups (5 an hour) and reset emails (5 an hour) per visitor, using the real visitor IP behind the host's proxy. Verification links work once. Reminder emails go only to verified addresses.
+- **Strict Content-Security-Policy:** the site has no inline JavaScript, so the browser runs scripts from this site only. This blocks injected scripts even if a template bug ever let one through. Frames, plugins and outside form targets are blocked too.
+- Production adds HTTPS redirect, HSTS, secure cookies, a configurable admin path and a 6 MB request cap. `manage.py check --deploy` is clean apart from two optional HSTS opt-ins, and a test keeps it that way.
+- Checked with `pip-audit` (no known vulnerable dependencies) and `bandit` (no medium or high findings). RSS is parsed with `defusedxml`.
 
 ## How the recommender works
 
@@ -158,7 +163,7 @@ To keep the data fresh, run `python manage.py scrape` once a day. Use cron on a 
 python manage.py test app1
 ```
 
-There are 159 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
+There are 184 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
 
 ## Configuration
 
@@ -175,12 +180,21 @@ Everything that differs between environments is set through environment variable
 
 ## Deploying
 
-```bash
-python manage.py collectstatic --noinput
-gunicorn project1.wsgi
-```
+The repo includes a `Procfile`: on release it runs migrations and creates the cache table, then starts gunicorn. Set these environment variables on the host:
 
-When `DJANGO_DEBUG` is off, secure cookies and other security headers are switched on automatically.
+| Variable | Example | Why |
+|---|---|---|
+| `DJANGO_SECRET_KEY` | 50+ random characters | Signs sessions and links |
+| `DJANGO_DEBUG` | `False` | Turns on all production protections |
+| `DJANGO_ALLOWED_HOSTS` | `scholarshipspy.onrender.com` | Only answer for your domain |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | `https://scholarshipspy.onrender.com` | Forms work over HTTPS |
+| `DB_ENGINE`, `DB_NAME`, `DB_USER`, ... | Postgres | Persistent data |
+| `SITE_URL` | `https://scholarshipspy.onrender.com` | Links in emails |
+| `TRUSTED_PROXY_COUNT` | `1` | Real visitor IPs for rate limits |
+| `DJANGO_ADMIN_URL` | `manage-x7k2/` | Hide the admin login |
+| `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | SMTP login | Verification, reset and reminder emails |
+
+Daily jobs run inside the web process by default (see *Automatic daily jobs*). Start `DJANGO_HSTS_SECONDS` at one day and raise it to a year once HTTPS works.
 
 ## Future work
 

@@ -191,6 +191,7 @@ input[type=file].form-control { padding: 7px 10px; }
 /* ---------- Login / registration ---------- */
 .auth-page { padding: 112px 0 64px; background: var(--bg); min-height: 80vh; }
 .auth-card { display: flex; max-width: 880px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.auth-card-single { max-width: 460px; }
 .auth-side { flex: 0 0 38%; flex-direction: column; justify-content: center; align-items: flex-start; gap: 6px; padding: 48px 40px; background: var(--brand-dark); }
 .auth-side h3 { color: #fff; font-weight: 700; font-size: 22px; }
 .auth-side p { color: rgba(255, 255, 255, .8); margin-bottom: 16px; }
