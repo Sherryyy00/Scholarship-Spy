@@ -75,7 +75,7 @@ def _wrap(text, width=15, lines=3):
 
 def generated_thumbnail(subject, country, degree=""):
     label = (subject.split(";")[0].strip() if subject else "") or degree or "Scholarship"
-    key = int(hashlib.md5(label.lower().encode()).hexdigest(), 16)
+    key = int(hashlib.md5(label.lower().encode(), usedforsecurity=False).hexdigest(), 16)
     dark, light = PALETTES[key % len(PALETTES)]
     icon = ICON_PATHS[_family(f"{subject} {degree}")]
 

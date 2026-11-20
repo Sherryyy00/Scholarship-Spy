@@ -9,6 +9,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core import signing
+from django.conf import settings
+from django.contrib.auth import views as auth_views
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
@@ -309,9 +311,15 @@ def contact(request):
 
 # ---------- accounts ----------
 
+REGISTRATIONS_PER_HOUR = 5
+
+
 def registration(request):
     if request.method != "POST":
         return render(request, "app1/registration.html")
+    if rate_limited(request, "register", REGISTRATIONS_PER_HOUR, 60 * 60):
+        messages.error(request, "Too many sign-ups from your network. Please try again in an hour.")
+        return render(request, "app1/registration.html", status=429)
 
     username = (request.POST.get("username") or "").strip()
     first_name = (request.POST.get("first_name") or "").strip()
@@ -359,14 +367,15 @@ def registration(request):
 
 
 def verify(request, token):
-    from .models import Profile
+    from .models import Profile, new_token
 
     profile = Profile.objects.filter(email_token=token).first()
     if profile is None:
         messages.error(request, "That verification link is invalid or has already been used.")
         return redirect("login")
     profile.is_verified = True
-    profile.save(update_fields=["is_verified"])
+    profile.email_token = new_token()  # each link works once
+    profile.save(update_fields=["is_verified", "email_token"])
     messages.success(request, "Account verified. You can now log in.")
     return redirect("login")
 
@@ -378,7 +387,26 @@ LOGIN_LOCKOUT_SECONDS = 15 * 60
 
 
 def _client_ip(request):
+    """The visitor's IP. Behind a host's proxy, REMOTE_ADDR is the proxy, so read the
+    entry the proxy added to X-Forwarded-For (TRUSTED_PROXY_COUNT says how many proxies).
+    Entries further left are set by the client and can be faked, so they're ignored."""
+    hops = settings.TRUSTED_PROXY_COUNT
+    forwarded = [p.strip() for p in request.META.get("HTTP_X_FORWARDED_FOR", "").split(",") if p.strip()]
+    if hops and len(forwarded) >= hops:
+        return forwarded[-hops]
     return request.META.get("REMOTE_ADDR", "")
+
+
+def rate_limited(request, scope, limit, window):
+    """Count one hit for this visitor; True once they exceed `limit` within `window` seconds."""
+    key = f"rate:{scope}:{_client_ip(request)}"
+    cache.add(key, 0, window)
+    try:
+        count = cache.incr(key)
+    except ValueError:
+        cache.set(key, 1, window)
+        count = 1
+    return count > limit
 
 
 def _throttle_keys(request, identifier):
@@ -959,3 +987,37 @@ def unsubscribe_reminders(request, token):
 
     Profile.objects.filter(user_id=user_pk).update(email_reminders=False)
     return render(request, "app1/unsubscribed.html")
+
+
+# ---------- forgotten password ----------
+
+
+PASSWORD_RESETS_PER_HOUR = 5
+
+
+class PasswordResetView(auth_views.PasswordResetView):
+    """Django's reset flow (one-time, 1-hour links; the page never says whether an email
+    has an account) plus a per-visitor limit so it can't be used to flood an inbox."""
+
+    template_name = "app1/password_reset_form.html"
+    email_template_name = "emails/password_reset.txt"
+    subject_template_name = "emails/password_reset_subject.txt"
+
+    def post(self, request, *args, **kwargs):
+        if rate_limited(request, "password-reset", PASSWORD_RESETS_PER_HOUR, 60 * 60):
+            messages.error(request, "Too many reset requests. Please try again in an hour.")
+            return self.render_to_response(self.get_context_data(form=self.get_form()), status=429)
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        from urllib.parse import urlsplit
+        parts = urlsplit(settings.SITE_URL)
+        self.extra_email_context = {"site_url": settings.SITE_URL}
+        form.save(
+            domain_override=parts.netloc, use_https=parts.scheme == "https",
+            subject_template_name=self.subject_template_name,
+            email_template_name=self.email_template_name,
+            from_email=settings.DEFAULT_FROM_EMAIL, request=self.request,
+            extra_email_context=self.extra_email_context,
+        )
+        return redirect(self.get_success_url())

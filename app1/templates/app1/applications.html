@@ -61,15 +61,4 @@
 </div>
 {% endif %}
 
-<script>
-// Change status without reloading: post with fetch, then move the card on next load.
-document.querySelectorAll('.js-autosave').forEach(function (select) {
-  select.addEventListener('change', function () {
-    var form = select.form;
-    fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'X-Requested-With': 'fetch' } })
-      .then(function (r) { if (!r.ok) throw r; window.location.reload(); })
-      .catch(function () { form.submit(); });
-  });
-});
-</script>
 {% endblock %}
