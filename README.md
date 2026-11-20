@@ -33,14 +33,37 @@ Scholarship Spy is a Django web app that helps students find scholarships. You c
 - **Save and track.** Bookmark any scholarship, then follow it on a board through *Interested → Preparing → Applied → Interview → Successful/Unsuccessful*, with private notes. Upcoming deadlines also appear on the profile page.
 - **Email reminders.** Users get one digest email 14 days and again 3 days before a saved scholarship closes, while it's still *Interested* or *Preparing*. Each reminder is sent only once per deadline. Every email has a one-click unsubscribe link, and reminders can also be turned off in the profile.
 
-Run reminders once a day:
+### Automatic daily jobs (no commands needed)
+
+The site runs two jobs by itself while it's up:
+
+| Job | When (UTC, configurable) | What it does |
+|---|---|---|
+| `daily_scrape` | after 03:00 (`SCRAPE_AT`) | Collects fresh scholarships from every enabled source |
+| `deadline_reminders` | after 08:00 (`REMINDERS_AT`) | Emails users whose saved scholarships close soon |
+
+Each job runs **at most once a day**, even with several server processes, because a run is claimed by a database row that can only exist once per day. If the site was asleep at the scheduled time, the job runs as soon as it wakes. Every run, with its output and any error, is listed in the admin under **Job runs**.
+
+Other ways to run them, if you prefer:
 
 ```bash
-python manage.py send_deadline_reminders            # sends emails
-python manage.py send_deadline_reminders --dry-run  # just counts
+python manage.py run_jobs --list                    # what's scheduled
+python manage.py run_jobs --force deadline_reminders # run one now
+python manage.py run_scheduler                      # scheduler as a separate worker
+python manage.py run_jobs                           # for cron, e.g. hourly
 ```
 
-On Windows, use Task Scheduler to run `python manage.py send_deadline_reminders` daily. On a server, use cron, for example `30 8 * * * cd /path/to/app && python manage.py send_deadline_reminders`. Without SMTP settings, emails are printed to the console.
+Set `SCHEDULER_AUTOSTART=False` if you use the worker or cron options instead. Without SMTP settings, emails are printed to the console.
+
+## Eligibility
+
+Each scholarship's "who can apply" text is turned into rules (`app1/eligibility.py`) and checked against the user's nationality, highest qualification and CGPA:
+
+- **Nationality.** "International students" (not open to nationals of the host country), "UK and EU", "developing countries", "low and middle income Commonwealth countries", "all nationalities", and lists such as Chevening's (shown as *check the official list*, never guessed). Country groups (EU, Commonwealth, World Bank high income) are in `app1/geo.py`, each noting its source and when it was checked.
+- **Degree level.** Someone who already holds a master's isn't usually funded for another master's.
+- **Grades.** Minimum GPA, where the listing states one.
+
+Results are *eligible*, *not eligible* (with the reason) or *unknown*. Only clear "not eligible" results are hidden: on lists via **"Only ones I can apply for"**, and in recommendations by default with a **Show all** link. Users are always told to confirm on the official website.
 
 ## Privacy and security
 
@@ -50,6 +73,11 @@ On Windows, use Task Scheduler to run `python manage.py send_deadline_reminders`
 - Login accepts a username or email and locks out after 5 failed attempts for 15 minutes. Logging out requires a POST.
 - Users can delete individual searches, clear their whole history, or delete their account and all of its data.
 - New feedback appears on the home page only after an admin approves it.
+- **Forgotten password:** one-time links that expire after an hour. The page never reveals whether an email has an account.
+- **Rate limits:** sign-ups (5 an hour) and reset emails (5 an hour) per visitor, using the real visitor IP behind the host's proxy. Verification links work once. Reminder emails go only to verified addresses.
+- **Strict Content-Security-Policy:** the site has no inline JavaScript, so the browser runs scripts from this site only. This blocks injected scripts even if a template bug ever let one through. Frames, plugins and outside form targets are blocked too.
+- Production adds HTTPS redirect, HSTS, secure cookies, a configurable admin path and a 6 MB request cap. `manage.py check --deploy` is clean apart from two optional HSTS opt-ins, and a test keeps it that way.
+- Checked with `pip-audit` (no known vulnerable dependencies) and `bandit` (no medium or high findings). RSS is parsed with `defusedxml`.
 
 ## How the recommender works
 
@@ -148,7 +176,7 @@ To keep the data fresh, run `python manage.py scrape` once a day. Use cron on a 
 python manage.py test app1
 ```
 
-There are 149 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
+There are 189 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
 
 ## Configuration
 
@@ -165,12 +193,21 @@ Everything that differs between environments is set through environment variable
 
 ## Deploying
 
-```bash
-python manage.py collectstatic --noinput
-gunicorn project1.wsgi
-```
+The repo includes a `Procfile`: on release it runs migrations and creates the cache table, then starts gunicorn. Set these environment variables on the host:
 
-When `DJANGO_DEBUG` is off, secure cookies and other security headers are switched on automatically.
+| Variable | Example | Why |
+|---|---|---|
+| `DJANGO_SECRET_KEY` | 50+ random characters | Signs sessions and links |
+| `DJANGO_DEBUG` | `False` | Turns on all production protections |
+| `DJANGO_ALLOWED_HOSTS` | `scholarshipspy.onrender.com` | Only answer for your domain |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | `https://scholarshipspy.onrender.com` | Forms work over HTTPS |
+| `DB_ENGINE`, `DB_NAME`, `DB_USER`, ... | Postgres | Persistent data |
+| `SITE_URL` | `https://scholarshipspy.onrender.com` | Links in emails |
+| `TRUSTED_PROXY_COUNT` | `1` | Real visitor IPs for rate limits |
+| `DJANGO_ADMIN_URL` | `manage-x7k2/` | Hide the admin login |
+| `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | SMTP login | Verification, reset and reminder emails |
+
+Daily jobs run inside the web process by default (see *Automatic daily jobs*). Start `DJANGO_HSTS_SECONDS` at one day and raise it to a year once HTTPS works.
 
 ## Future work
 

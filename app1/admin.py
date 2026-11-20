@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from .models import (
     Country, Feedback, FieldOfInterest, History, Institute, Profile, Program,
-    Recommendation, SavedScholarship, Scholarship, ScrapeRun, TypeOfDegree,
+    JobRun, Recommendation, SavedScholarship, Scholarship, ScrapeRun, TypeOfDegree,
 )
 
 
@@ -75,3 +75,13 @@ class SavedScholarshipAdmin(admin.ModelAdmin):
     list_display = ("profile", "scholarship", "status", "updated_at", "reminded_14_for", "reminded_3_for")
     list_filter = ("status",)
     raw_id_fields = ("profile", "scholarship")
+
+
+@admin.register(JobRun)
+class JobRunAdmin(admin.ModelAdmin):
+    list_display = ("job", "run_date", "status", "started_at", "finished_at")
+    list_filter = ("job", "status")
+    readonly_fields = [f.name for f in JobRun._meta.fields]
+
+    def has_add_permission(self, request):
+        return False

@@ -75,7 +75,7 @@ def _wrap(text, width=15, lines=3):
 
 def generated_thumbnail(subject, country, degree=""):
     label = (subject.split(";")[0].strip() if subject else "") or degree or "Scholarship"
-    key = int(hashlib.md5(label.lower().encode()).hexdigest(), 16)
+    key = int(hashlib.md5(label.lower().encode(), usedforsecurity=False).hexdigest(), 16)
     dark, light = PALETTES[key % len(PALETTES)]
     icon = ICON_PATHS[_family(f"{subject} {degree}")]
 
@@ -138,3 +138,33 @@ def deadline_badge(scholarship):
     if scholarship.deadline_estimated:
         text += " (est.)"
     return format_html('<span class="dl-badge {}" title="{}"><i class="bi bi-calendar-event"></i> {}</span>', tone, title, text)
+
+
+@register.simple_tag(takes_context=True)
+def eligibility(context, scholarship):
+    """Eligibility Result for the logged-in user (None when logged out). Cached per request."""
+    request = context.get("request")
+    user = getattr(request, "user", None)
+    if not user or not user.is_authenticated:
+        return None
+    from ..eligibility import check
+
+    cache = getattr(request, "_eligibility_cache", None)
+    if cache is None:
+        cache = request._eligibility_cache = {}
+    if scholarship.pk not in cache:
+        cache[scholarship.pk] = check(scholarship, user.profile)
+    return cache[scholarship.pk]
+
+
+@register.simple_tag(takes_context=True)
+def eligibility_badge(context, scholarship):
+    from django.utils.html import format_html
+
+    result = eligibility(context, scholarship)
+    if result is None or result.status == "unknown":
+        return ""
+    title = " ".join(result.reasons)
+    if result.is_eligible:
+        return format_html('<span class="el-badge el-yes" title="{}"><i class="bi bi-check-circle"></i> You can apply</span>', title)
+    return format_html('<span class="el-badge el-no" title="{}"><i class="bi bi-slash-circle"></i> Not eligible</span>', title)

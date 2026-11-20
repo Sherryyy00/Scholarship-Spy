@@ -684,16 +684,5 @@
 
 </main><!-- End #main -->
 
-<script>
-  // Highlight the search fields while they're being used (no jQuery needed).
-  document.querySelectorAll('.styled-input.multi input').forEach(function (input) {
-    var box = input.parentElement && input.parentElement.parentElement;
-    input.addEventListener('focus', function () { box && box.classList.add('active'); });
-    input.addEventListener('blur', function () {
-      box && box.classList.remove('active');
-      input.setAttribute('filled', input.value ? 'true' : 'false');
-    });
-  });
-</script>
 
 {% endblock body %}
