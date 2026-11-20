@@ -1,74 +1,21 @@
-{% extends "base.html" %}
-{% block body %}
-{% load static%}
-
-<main id="main" data-aos="fade-in">
-
-
-  <!-- ======= Breadcrumbs ======= -->
-  <div class="breadcrumbs">
-    <div class="container">
-      <h2>Degrees</h2>
-      <p>There are many scholarships available at postgraduate and doctorate levels, masters level, bachelors level, and
-        many more to help academically gifted students and faculty. </p>
-    </div>
-  </div><!-- End Breadcrumbs -->
-
-  <!-- ======= Trainers Section ======= -->
-  <section id="trainers" class="trainers">
-    <div class="container" data-aos="fade-up">
-
-      <div class="row" data-aos="zoom-in" data-aos-delay="100">
-        <div class="col-lg-4 col-md-6 d-flex align-items-stretch">
-          <div class="member">
-            <img src="{% static 'assets/img/trainers/phd.jpg'%}" class="img-fluid" alt="">
-            <div class="member-content">
-              <h4><a href="{% url 'category_degree' 'phd' %}" style="text-decoration: none;"> Ph.D. </a>
-              </h4>
-              {% comment %} <span>Psychology</span> {% endcomment %}
-              <p>
-                There are many scholarships available at doctorate levels to help academically gifted students and faculty.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-lg-4 col-md-6 d-flex align-items-stretch">
-          <div class="member">
-            <img src="{% static 'assets/img/trainers/masters.jpg'%}" class="img-fluid" alt="">
-            <div class="member-content">
-              <h4><a href="{% url 'category_degree' 'Masters'  %}" style="text-decoration: none;">
-                  Masters </a></h4>
-              {% comment %} <span>Computer Sciences</span> {% endcomment %}
-              <p>
-                There are many scholarships available at masters levels to help academically gifted students and faculty.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-lg-4 col-md-6 d-flex align-items-stretch">
-          <div class="member">
-            <img src="{% static 'assets/img/trainers/bachelors.jpg'%}" class="img-fluid" alt="">
-            <div class="member-content">
-              <h4><a href="{% url 'category_degree' 'bachelor' %}" style="text-decoration: none;">
-                  Bachelors </a></h4>
-              {% comment %} <span>Mechanical</span> {% endcomment %}
-              <p>
-                There are many scholarships available at bachelors levels to help academically gifted students and faculty.
-              </p>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-  </section><!-- End Trainers Section -->
-
-</main><!-- End #main -->
-
-
+{% extends "app1/listing_base.html" %}
+{% block title %}Degrees | Scholarship Spy{% endblock %}
+{% block heading %}Degrees{% endblock %}
+{% block subheading %}Pick the level you want to study at.{% endblock %}
+{% block content %}
+<div class="row g-4">
+  {% for d in degrees %}
+  <div class="col-md-4">
+    <a href="{% url 'category_degree' d.slug %}" class="degree-card">
+      <span class="degree-icon"><i class="bi {{ d.icon }}"></i></span>
+      <h2>{{ d.name }}</h2>
+      <p>{{ d.blurb }}</p>
+      <span class="degree-foot">
+        <strong>{{ d.count }}</strong> scholarship{{ d.count|pluralize }}
+        <i class="bi bi-arrow-right"></i>
+      </span>
+    </a>
+  </div>
+  {% endfor %}
+</div>
 {% endblock %}
-
-</html>

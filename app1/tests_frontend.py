@@ -83,7 +83,7 @@ class HomePageTests(TestCase):
         self.client.login(username="u", password="Str0ng-Passphrase!")
         for url in (reverse("scholarships"), reverse("search_results") + "?country=Canada"):
             r = self.client.get(url)
-            self.assertContains(r, 'class="sch-thumb"')
+            self.assertContains(r, 'class="sch-card"')
 
 
 class CuratedSourceTests(TestCase):
@@ -113,3 +113,27 @@ class AboutPageTests(TestCase):
         for text in ("Lorem", "Proin iaculis", "Saul Goodman", "purecounter"):
             self.assertNotContains(r, text)
         self.assertIn("stats", r.context)
+
+
+class ListingLayoutTests(TestCase):
+    def setUp(self):
+        call_command("updatemodel", "Dataset/sample_scholarships.csv", stdout=StringIO())
+
+    def test_old_dashboard_theme_not_loaded(self):
+        """profile_style.css (old dashboard theme) overrode the design; no page may load it."""
+        for f in TEMPLATES.rglob("*.html"):
+            self.assertNotIn("profile_style.css", f.read_text(), f.name)
+
+    def test_pagination_keeps_filters(self):
+        r = self.client.get(reverse("search_results"), {"degree": "Masters"})
+        self.assertEqual(r.context["qs"], "degree=Masters")
+
+    def test_detail_shows_similar_scholarships(self):
+        s = Scholarship.objects.get(title__contains="Data Science")
+        r = self.client.get(reverse("scholarship_detail", args=[s.pk]))
+        self.assertTrue(r.context["similar"])
+        self.assertNotIn(s, r.context["similar"])
+
+    def test_category_pages_have_heading(self):
+        r = self.client.get(reverse("category_degree", args=["Masters"]))
+        self.assertContains(r, "Masters scholarships")
