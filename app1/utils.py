@@ -1,33 +1,34 @@
+import logging
+
 import requests
-import json
 from django.conf import settings
 from django.core.mail import send_mail
+from django.urls import reverse
+
+logger = logging.getLogger(__name__)
+
 
 def get_all_countries():
-    url = "https://restcountries.com/v3.1/all"
-
-    response = requests.get(url)
-
-    countries_response_json = json.loads(response.text)
-
-    countries_list = []
-
-    for country in countries_response_json:
-        countries_list.append(country['name']['common'])
-
-
-    return sorted(countries_list)
-
-def send_email_token(email,token):
+    """Fetch country names from restcountries.com. Returns [] if the API is unavailable."""
     try:
-        subject = 'Account Verification'
-        message = f'Click on the link to verify http://127.0.0.1:8000/verify/{token}/'
-        email_from = settings.EMAIL_HOST_USER
-        recipient_list = [email, ]
-        send_mail( subject, message, email_from, recipient_list )
-                
-        
-    except Exception as e:
+        response = requests.get("https://restcountries.com/v3.1/all?fields=name", timeout=10)
+        response.raise_for_status()
+    except requests.RequestException:
+        logger.exception("Could not fetch country list")
+        return []
+    return sorted(c["name"]["common"] for c in response.json())
+
+
+def send_email_token(email, token):
+    link = settings.SITE_URL + reverse("verify", args=[token])
+    try:
+        send_mail(
+            subject="Verify your Scholarship Spy account",
+            message=f"Welcome to Scholarship Spy!\n\nClick the link below to verify your account:\n{link}\n",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+        )
+    except Exception:
+        logger.exception("Failed to send verification email to %s", email)
         return False
-    
     return True

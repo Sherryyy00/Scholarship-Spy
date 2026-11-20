@@ -1,593 +1,488 @@
-from multiprocessing.connection import Client
-from django.shortcuts import render, HttpResponse, HttpResponseRedirect,redirect
-from django.http import Http404
-# from waitress import profile
-from .forms import RegistrationForm
-from .forms import ProfileUpdateForm
-from .models import Profile,Scholarship,History,FieldOfInterest,TypeOfDegree,Country,Feedback,Program,FieldOfInterest,Feedback
+import logging
+from datetime import date
+from decimal import Decimal, InvalidOperation
+from urllib.parse import urlencode
+
 from django.contrib import messages
-from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.core.validators import validate_email
+from django.db import transaction
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.dateparse import parse_date
-from django.db.models import Q
-from .utils import *
-import uuid
+from django.utils.http import url_has_allowed_host_and_scheme
 
-import warnings
-warnings.filterwarnings('ignore')
+from . import recommender
+from .models import (
+    Country, Feedback, FieldOfInterest, History, Program, Recommendation,
+    Scholarship, TypeOfDegree,
+)
+from .utils import send_email_token
 
-import re
-import numpy as np
-import pandas as pd
-from heapq import nsmallest
-from nltk.corpus import stopwords
-from sklearn.cluster import KMeans
-from nltk.tokenize import word_tokenize
-#from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-import pickle
+logger = logging.getLogger(__name__)
+
+PAGE_SIZE = 10
+MIN_STATEMENT_LENGTH = 250
+
+# Search form field -> Scholarship lookup
+SEARCH_FILTERS = {
+    "scholarship_title": "title__icontains",
+    "country": "country__icontains",
+    "field_of_interest": "subject__icontains",
+    "degree": "degree__icontains",
+}
 
 
-# Create your views here.
+# ---------- helpers ----------
+
+def clean_param(value):
+    """Treat empty strings, whitespace and the literal 'None' (from old pagination links) as missing."""
+    if value is None:
+        return None
+    value = value.strip()
+    return None if value in {"", "None"} else value
+
+
+def paginate(request, queryset, per_page=PAGE_SIZE):
+    """get_page() already falls back to page 1 / last page for bad input."""
+    return Paginator(queryset, per_page).get_page(request.GET.get("page"))
+
+
+def site_subjects():
+    """Distinct site-wide subjects (not the ones users added to their own profiles)."""
+    return FieldOfInterest.objects.filter(profile__isnull=True).values("name").distinct().order_by("name")
+
+
+def site_degree_types():
+    return TypeOfDegree.objects.filter(profile__isnull=True).values("name").distinct().order_by("name")
+
+
+def search_dropdowns():
+    return {
+        "all_field_of_interests": site_subjects(),
+        "all_degree_types": site_degree_types(),
+        "all_countries": Country.objects.all(),
+    }
+
+
+# ---------- public pages ----------
+
 def index(request):
-    context = {}
-    all_field_of_interests = FieldOfInterest.objects.all()
-    all_degree_types = TypeOfDegree.objects.all()
-    all_countries = Country.objects.all()
-    feedbacks = Feedback.objects.all()[0:3]
-    print(Feedback.objects.all())
-    context['all_field_of_interests'] = all_field_of_interests
-    context['all_degree_types'] = all_degree_types
-    context['all_countries'] = all_countries
-    context['all_feedbacks'] = feedbacks
-    return render(request,"app1/index.html",context)
+    context = search_dropdowns()
+    context["all_feedbacks"] = Feedback.objects.select_related("profile__user")[:3]
+    return render(request, "app1/index.html", context)
 
 
 def search_results(request):
-    all_field_of_interests = FieldOfInterest.objects.all() 
-    all_degree_types = TypeOfDegree.objects.all() 
-    all_countries = Country.objects.all() 
-    scholarship_title = request.GET.get("scholarship_title") or None
-    if scholarship_title == 'None':
-        scholarship_title = None
-    country = request.GET.get("country") or None
-    if country == 'None':
-        country = None
-    field_of_interest = request.GET.get("field_of_interest") or None
-    if field_of_interest == 'None':
-        field_of_interest = None
-    degree = request.GET.get("degree") or None
-    if degree == 'None':
-        degree = None
-    print({'scholarship_title':scholarship_title,'country':country,'field_of_interest':field_of_interest,'degree':degree})
-    page = request.GET.get('page', 1)
-    if scholarship_title!=None and country==None and field_of_interest==None and degree==None:
-        print("scholarship_title this is runninng")
-        all_scholarships = Scholarship.objects.filter(
-            title__icontains=scholarship_title
-        )
-    elif scholarship_title==None and country!=None and field_of_interest==None and degree==None:
-        print("country this is runninng")
-        all_scholarships = Scholarship.objects.filter(country__icontains=country)
-
-    elif scholarship_title==None and country==None and field_of_interest!=None and degree==None:
-        print("field_of_interest this is runninng")
-        all_scholarships = Scholarship.objects.filter(subject__icontains=field_of_interest)
-
-    elif scholarship_title==None and country==None and field_of_interest==None and degree!=None:
-        print("degree this is runninng")
-        all_scholarships = Scholarship.objects.filter(degree__icontains=degree)
-
-    elif scholarship_title!=None and country!=None and field_of_interest==None and degree==None:
-        print("scholarship_title country this is runninng")
-        all_scholarships = Scholarship.objects.filter(title__icontains=scholarship_title,country__icontains=country)
-    
-    elif scholarship_title!=None and country==None and field_of_interest!=None and degree==None:
-        print("scholarship_title field_of_interest this is runninng")
-
-        all_scholarships = Scholarship.objects.filter(title__icontains=scholarship_title,subject__icontains=field_of_interest)
-    
-    elif scholarship_title!=None and country==None and field_of_interest==None and degree!=None:
-        print("scholarship_title degree this is runninng")
-
-        all_scholarships = Scholarship.objects.filter(title__icontains=scholarship_title,degree__icontains=degree)
-    
-    elif scholarship_title==None and country!=None and field_of_interest!=None and degree==None:
-        print("country field_of_interest this is runninng")
-        all_scholarships = Scholarship.objects.filter(country__icontains=country,subject__icontains=field_of_interest)
-    
-    elif scholarship_title==None and country!=None and field_of_interest==None and degree!=None:
-        print("country degree this is runninng")
-
-        all_scholarships = Scholarship.objects.filter(country__icontains=country,degree__icontains=degree)
-
-    elif scholarship_title==None and country==None and field_of_interest!=None and degree!=None:
-        print("field_of_interest degree this is runninng")
-        all_scholarships = Scholarship.objects.filter(subject__icontains=field_of_interest,degree__icontains=degree)
-        
-    
-    elif scholarship_title!=None and country!=None and field_of_interest!=None and degree==None:
-        print("scholarship_title country field_of_interest this is runninng")
-        all_scholarships = Scholarship.objects.filter(title__icontains=scholarship_title,country__icontains=country,subject__icontains=field_of_interest)
-    
-    elif scholarship_title!=None and country!=None and field_of_interest==None and degree!=None:
-        print("scholarship_title country degree this is runninng")
-        all_scholarships = Scholarship.objects.filter(title__icontains=scholarship_title,country__icontains=country,degree__icontains=degree)
-  
-    
-    elif scholarship_title!=None and country==None and field_of_interest!=None and degree!=None:
-        print("scholarship_title field_of_interest degree this is runninng")
-        all_scholarships = Scholarship.objects.filter(title__icontains=scholarship_title,subject__icontains=field_of_interest,degree__icontains=degree)
-
-    elif scholarship_title==None and country!=None and field_of_interest!=None and degree!=None:
-        print("field_of_interest country degree this is runninng")
-        all_scholarships = Scholarship.objects.filter(country__icontains=country,degree__icontains=degree,subject__icontains=field_of_interest)
-
-    elif scholarship_title!=None and country!=None and field_of_interest!=None and degree!=None:
-        print("scholarship_title country field_of_interest degree this is runninng")
-        all_scholarships = Scholarship.objects.filter(title__icontains=scholarship_title,country__icontains=country,subject__icontains=field_of_interest,degree__icontains=degree)
-    else:
+    params = {name: clean_param(request.GET.get(name)) for name in SEARCH_FILTERS}
+    filters = {SEARCH_FILTERS[name]: value for name, value in params.items() if value}
+    if not filters:
         return redirect("home")
 
-    paginator = Paginator(all_scholarships, 10)
-    try:
-        scholarships = paginator.page(page)
-    except not isinstance(page,int):
-        scholarships = paginator.page(1)
-    except:
-        scholarships = paginator.page(paginator.num_pages)
-    print(scholarships)
+    results = Scholarship.objects.filter(**filters)
     context = {
-        'scholarships':scholarships,
-        'scholarship_title':scholarship_title,
-        'country':country,
-        'field_of_interest':field_of_interest,
-        'degree':degree,
-        'number_of_scholarships':len(all_scholarships),
+        **params,
+        **search_dropdowns(),
+        "scholarships": paginate(request, results),
+        "number_of_scholarships": results.count(),
     }
-    context['all_field_of_interests'] = all_field_of_interests
-    context['all_degree_types'] = all_degree_types
-    context['all_countries'] = all_countries
-    return render(request,"app1/scholarship_results.html",context)
+    return render(request, "app1/scholarship_results.html", context)
 
 
+def search(request):
+    """Legacy search form (degree + country). Hands off to the main search."""
+    query = {
+        "degree": clean_param(request.GET.get("degree")) or "",
+        "country": clean_param(request.GET.get("query")) or "",
+    }
+    return redirect(f"{reverse('search_results')}?{urlencode(query)}")
 
-def base(request):
-    return render(request,"app1/base.html")
 
 def subjects(request):
-    context = {}
-    all_subjects = FieldOfInterest.objects.all()
-    mydata = [all_subjects[i:i + 15] for i in range(0, len(all_subjects), 15)]
-    context['all_subjects'] = mydata
-    return render(request,"app1/subjects.html",context)
-
-def category_subjects(request,subject):
-    context = {}
-    all_scholarships = Scholarship.objects.filter(subject__icontains=subject)
-    page = request.GET.get('page', 1)
-    paginator = Paginator(all_scholarships, 10)
-    try:
-        scholarships = paginator.page(page)
-    except not isinstance(page,int):
-        scholarships = paginator.page(1)
-    except:
-        scholarships = paginator.page(paginator.num_pages)
-    context['scholarships']= scholarships
-    context['number_of_scholarships']=len(all_scholarships)
-    return render(request,'app1/category_subjects.html',context)
-
-def trainers(request):
-    return render(request,"app1/trainers.html")
+    all_subjects = list(site_subjects())
+    chunks = [all_subjects[i:i + 15] for i in range(0, len(all_subjects), 15)]
+    return render(request, "app1/subjects.html", {"all_subjects": chunks})
 
 
-def category_degree(request,degree):
-    context = {}
-    all_scholarships = Scholarship.objects.filter(degree__icontains=degree)
-    page = request.GET.get('page', 1)
-    paginator = Paginator(all_scholarships, 10)
-    try:
-        scholarships = paginator.page(page)
-    except not isinstance(page,int):
-        scholarships = paginator.page(1)
-    except:
-        scholarships = paginator.page(paginator.num_pages)
-    context['scholarships']= scholarships
-    context['number_of_scholarships']=len(all_scholarships)
-    return render(request,'app1/category_degree.html',context)
-
-def pricing(request):
-    return render(request,"app1/pricing.html")
-
-def events(request):
-    return render(request,"app1/events.html")
-
-def scholarship1(request):
-    return render(request, "app1/berlin-scholarship.html")
-    
-def scholarship2(request):
-    return render(request, "app1/canada-scholarship.html")
-
-def about(request):
-    return render(request,"app1/about.html")
-    #return HttpResponse("this is about page")
-
-def services(request):
-    return HttpResponse("this is services page")
-
-def contact(request):
-    return HttpResponse("this is contact page")
-
-#RegistrationView Function
-def registration(request):
-    if request.method == 'POST':
-        u_name = request.POST.get('username')
-        first_name = request.POST['first_name']
-        last_name = request.POST['last_name']
-        email = request.POST['email']
-        password = request.POST['password1']
-        confirm_password = request.POST['password2']
-        try:
-            user = User.objects.get(email=email)
-            if user:
-                messages.error(request, 'The email you entered already exists.')
-                return redirect("Registration")
-        except:
-            if password == confirm_password:
-                user = User.objects.create_user(username=u_name, email=email, password=password, first_name=first_name, last_name=last_name)
-                user.save()
-                user.profile.email_token=str(uuid.uuid4())
-                send_email_token(email,user.profile.email_token)
-                return HttpResponse('check your email account')
-            else:
-                messages.error(request, 'Password Mismatch')
-    return render(request, 'app1/registration.html')
-
-def verify(request, token):
-    try:
-        obj= Profile.objects.get(email_token=token)
-        obj.is_verified=True
-        obj.save()
-        return HttpResponse("Account Verified Successfully!")
-    
-    except Exception as e:
-        return HttpResponse("Invalid Token.")
-        
-
-def user_login(request):
-    if request.method == 'POST': 
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return HttpResponseRedirect('/', {'name': user.username})
-        else:
-            messages.error(request, 'Invalid Credentials')
-    return render(request, 'app1/userlogin.html')
+def _category(request, template, **lookup):
+    results = Scholarship.objects.filter(**lookup)
+    return render(request, template, {
+        "scholarships": paginate(request, results),
+        "number_of_scholarships": results.count(),
+    })
 
 
+def category_subjects(request, subject):
+    return _category(request, "app1/category_subjects.html", subject__icontains=subject)
 
 
-#User Profile
-@login_required(login_url="/login")
-def user_profile(request):
-    if request.user.is_authenticated:
-        return render(request, 'profile.html', {'name': request.user})
-    else:
-        return HttpResponseRedirect('/login/')
+def category_degree(request, degree):
+    return _category(request, "app1/category_degree.html", degree__icontains=degree)
 
 
-#Logout
-def user_logout(request):
-    logout(request)
-    return HttpResponseRedirect('/login/')
+def _degree_list(request, template, context_name, degree):
+    scholarships = Scholarship.objects.filter(degree__icontains=degree)
+    return render(request, template, {context_name: scholarships})
 
 
-#Profile Form
-@login_required(login_url="/login")
-def showformdata(request):
-    if request.method == 'POST':
-        photo = request.FILES.get("photo") or None
-        first_name = request.POST.get("first_name") or None
-        last_name = request.POST.get("last_name") or None
-        email = request.POST.get("email") or None
-        highest_qualification = request.POST.get("highest_qualification") or None
-        nationality = request.POST.get("nationality") or None
-        hidden_user_email = request.POST.get("hidden_user_email") or None
-        user = User.objects.get(email=hidden_user_email)
-        print(user)
-        if user is not None:
-            if first_name is not None:
-                user.first_name = first_name
-            if last_name is not None:
-                user.last_name = last_name
-            if email is not None:
-                user.email = email
-            user.save()
-        dob = request.POST.get("dob") or None
-        age = request.POST.get("age") or None
-        cgpa = request.POST.get("cgpa") or None
-
-        if dob is not None:
-            user.profile.dob = dob
-        if cgpa is not None:
-            if float(cgpa)>4.0:
-                messages.info(request, 'CGPA must be upto 4.0 !')
-                return redirect("userprofileedit")
-            if str(cgpa)[::-1].find('.') > 2:
-                messages.info(request, 'CGPA must have 2 digits after decimal !')
-                return redirect("userprofileedit")
-            user.profile.cgpa = cgpa
-        if age is not None:
-            user.profile.age = age
-        
-        if highest_qualification is not None:
-            user.profile.highest_qualification = highest_qualification
-        
-        if nationality is not None:
-            user.profile.nationality = nationality
-
-        if photo is not None:
-            user.profile.photo = photo
-        user.profile.save()
-        return redirect('userprofile')
-    return render (request, 'app1/profile_edit.html')
+def scholarshipdegree1(request):
+    return _degree_list(request, "app1/phd-list.html", "scholarshipone", "phd")
 
 
-@login_required(login_url="/login")
-def add_field_of_interest(request):
-    context = {}
-    if request.method=='POST':
-        fieldOfInterest = request.POST.get("fieldOfInterest")
-        fieldOfInterest_obj = FieldOfInterest.objects.create(name=fieldOfInterest,profile=request.user.profile)
-        fieldOfInterest_obj.save()
-        return redirect("userprofile")
-    return render(request,"app1/field_of_interest_form.html",context)
+def scholarshipdegree2(request):
+    return _degree_list(request, "app1/bachelors-list.html", "scholarshiptwo", "bachelor")
 
 
-@login_required(login_url="/login")
-def add_current_program(request):
-    context = {}
-    if request.method=='POST':
-        program = request.POST.get("program")
-        program_obj = Program.objects.create(name=program,profile=request.user.profile)
-        program_obj.save()
-        return redirect("userprofile")
-    return render(request,"app1/current_program.html",context)
-
-
-
-@login_required(login_url="/login")
-def showprofile(request):
-    context={}
-    if request.user.is_authenticated:
-        context['field_of_interest_list'] = request.user.profile.fieldofinterest_set.all()
-        context['current_program_list'] = request.user.profile.program_set.all()
-        return render (request, 'app1/profile.html',context)
-    
-
-
-@login_required(login_url="/login")
-def my_recommendations(request):
-    context = {}
-    user = request.user
-    my_personal_statement = request.GET.get("statement") or None
-
-    if my_personal_statement!=None:
-        if len(my_personal_statement) < 250:
-            messages.info(request, 'Your Statement should be minimum of 250 characters!')
-            context['personal_statement'] = my_personal_statement
-            return render (request, 'app1/recommendations.html',context)
-        else:
-            try:
-                history = History.objects.get(personal_statement = my_personal_statement,profile = user.profile)
-            except History.DoesNotExist:
-                history = History.objects.create(personal_statement = my_personal_statement,profile = user.profile)
-                history.save()
-            context['personal_statement'] = history.personal_statement
-            
-            #ML
-            df = pd.read_csv('Dataset/scholarshipads_updated.csv')
-
-# Drop null values
-            df = df.dropna()
-            df = df.reset_index(drop=True)
-
-            def Clean(text):
-                # Convert to lowercase
-                text = text.lower()
-
-                # Remove all characters which are not alphabetical or numerical
-                text = re.sub(r'[\W_]', ' ', text)
-
-                # Tokenization
-                text = word_tokenize(text)
-
-                # Filter out stop words
-                text = [w for w in text if not w in set(stopwords.words('english'))]
-
-                return text
-
-            def word_embeddings():
-                embeddings = {}
-                with open("glove.6B.50d.txt", 'r', encoding="utf-8") as f:
-                    for line in f:
-                        values = line.split()
-                        word = values[0]
-                        vector = np.asarray(values[1:], "float32")
-                        embeddings[word] = vector
-                return embeddings
-
-            def Vectorize(text, embeddings):
-                # Generate vector representation
-                vec = np.zeros(50)
-                count = 0
-                for i in text:
-                    try:
-                        vec += embeddings[i]
-                        count += 1
-                    except:
-                        pass
-                return vec/count
-
-            centroids = np.load('cluster_centers.npy', allow_pickle=True)
-
-            def recommend(text, embeddings, centroids,n=5):
-                temp = Clean(text)
-                temp = Vectorize(temp, embeddings)
-                diff = centroids - temp
-                dist = list(np.sum(diff**2, axis=-1) ** 0.5)
-                idx = [i for i in map(dist.index, nsmallest(n, dist))]
-
-                return idx
-
-            embeddings = word_embeddings()
-            result = recommend( my_personal_statement ,embeddings, centroids)
-            idx = np.unique(result)
-            
-            
-            scholarships_list = Scholarship.objects.all()[:20]
-            for scholarship in scholarships_list:
-                scholarship.history.add(history)
-                scholarship.save()
-            page = request.GET.get('page', 1)
-            paginator = Paginator(scholarships_list, 10)
-            try:
-                scholarships = paginator.page(page)
-            except not isinstance(page,int):
-                scholarships = paginator.page(1)
-            except:
-                scholarships = paginator.page(paginator.num_pages)
-
-            context["scholarships"] = scholarships
-    else:
-        context["scholarships"] = "" 
-        messages.info(request, 'No recommendation') 
-        #return redirect("my_recommendations")  
-        
-    return render (request, 'app1/recommendations.html',context)
-
-
-def scholarship_detail(request,pk):
-    context = {}
-    try:
-        scholarship = Scholarship.objects.get(pk=pk)
-        context['scholarship'] =  scholarship
-    except Scholarship.DoesNotExist:
-        raise Http404("Scholarship not found")
-    return render(request,"app1/scholarship_detail.html",context)
-
-
-@login_required(login_url="/login")
-def my_history(request):
-    context={}
-    user_history = request.user.profile.history_set.all()
-
-    context['user_history'] = user_history
-    return render(request,'app1/my_history.html',context)
-
-
-
-@login_required(login_url="/login")
-def password_reset_settings(request):
-    context={}
-    if request.method == 'POST':
-        user = request.user
-        old_password=request.POST.get("old_password")
-        new_password=request.POST.get("new_password")
-        retype_new_password=request.POST.get("retype_new_password")
-
-        print({
-            'old_password':old_password,
-            'new_password':new_password,
-            'retype_new_password':retype_new_password,
-        })
-
-        if new_password!=retype_new_password:
-            messages.info(request, 'Both Password should same!')
-            return redirect("password_reset_settings")
-       
-
-        check_pass = request.user.check_password(old_password)
-        print("check_pass",check_pass)
-        if check_pass:
-            if (new_password==retype_new_password):
-                user.set_password(new_password)
-                user.save()
-                return redirect("login")
-        
-        else:
-            messages.info(request, 'Old Password is wrong! Please enter right old password :)')
-            return redirect("password_reset_settings")
-
-    return render(request,'app1/reset_password.html')
+def scholarshipdegree3(request):
+    return _degree_list(request, "app1/masters-list.html", "scholarshipthree", "master")
 
 
 def scholarshipdata(request):
-    context ={}
-    scholarships_list = Scholarship.objects.all()
-    print(len(scholarships_list))
-    page = request.GET.get('page', 1)
-    paginator = Paginator(scholarships_list, 10)
+    return render(request, "app1/events.html", {"scholarships": paginate(request, Scholarship.objects.all())})
+
+
+def scholarship_detail(request, pk):
+    return render(request, "app1/scholarship_detail.html", {"scholarship": get_object_or_404(Scholarship, pk=pk)})
+
+
+def scholarshipdatadetial(request, id):
+    # Old URL; the events_detail template never existed. Send people to the real detail page.
+    return redirect("scholarship_detail", pk=id)
+
+
+def base(request):
+    return render(request, "app1/base.html")
+
+
+def trainers(request):
+    return render(request, "app1/trainers.html")
+
+
+def pricing(request):
+    return render(request, "app1/pricing.html")
+
+
+def events(request):
+    return render(request, "app1/events.html")
+
+
+def scholarship1(request):
+    return render(request, "app1/berlin-scholarship.html")
+
+
+def scholarship2(request):
+    return render(request, "app1/canada-scholarship.html")
+
+
+def about(request):
+    return render(request, "app1/about.html")
+
+
+def services(request):
+    return redirect("about")
+
+
+def contact(request):
+    return render(request, "app1/contact.html")
+
+
+# ---------- accounts ----------
+
+def registration(request):
+    if request.method != "POST":
+        return render(request, "app1/registration.html")
+
+    username = (request.POST.get("username") or "").strip()
+    first_name = (request.POST.get("first_name") or "").strip()
+    last_name = (request.POST.get("last_name") or "").strip()
+    email = (request.POST.get("email") or "").strip().lower()
+    password = request.POST.get("password1") or ""
+    confirm_password = request.POST.get("password2") or ""
+
+    errors = []
+    if not username:
+        errors.append("Please choose a username.")
+    elif User.objects.filter(username__iexact=username).exists():
+        errors.append("That username is already taken.")
     try:
-        scholarships = paginator.page(page)
-    except not isinstance(page,int):
-        scholarships = paginator.page(1)
-    except:
-        scholarships = paginator.page(paginator.num_pages)
-    context["scholarships"] = scholarships
-    return render (request, 'app1/events.html', context)
-
-
-@login_required(login_url="/login")
-def feedback(request):
-    context={}
-    if request.method=='POST':
-        emoji = request.POST.get("emoji")
-        feedback_input = request.POST.get("feedback")
-        print(emoji)
-        print(feedback)
-        feedback_obj = Feedback.objects.create(emoji=emoji,content=feedback_input,profile=request.user.profile)
-        feedback_obj.save()
-        return redirect("home")
-    return render(request, 'app1/feedback.html', context)
-
-    
-def scholarshipdatadetial(request,id):
-    scholar_ship = Scholarship.objects.get(pk=id)
-    print(scholar_ship)
-    return render (request, 'app1/events_detail.html', {'scholarship': scholar_ship})
-    
-
-def scholarshipdegree1(request):
-    scholarship_degree1 = Scholarship.objects.filter(Degree='PhD')
-    print(scholarship_degree1)
-    return render (request, 'app1/phd-list.html', {'scholarshipone': scholarship_degree1})
-    
-
-def scholarshipdegree2(request):
-    scholarship_degree2 = Scholarship.objects.filter(Degree='Bachelors')
-    print(scholarship_degree2)
-    return render (request, 'app1/bachelors-list.html', {'scholarshiptwo': scholarship_degree2})
-    
-
-def scholarshipdegree3(request):
-    scholarship_degree3 = Scholarship.objects.filter(Degree='Masters')
-    print(scholarship_degree3)
-    return render (request, 'app1/masters-list.html', {'scholarshipthree': scholarship_degree3})
-    
-
-def search(request):
-    degree = request.GET['degree']
-    country = request.GET['query']
-    search_data = Scholarship.objects.filter(Degree=degree, Country=country)
-    data = [item for item in search_data if degree in item.Degree and country in item.Country]
-    if data == []:
-        messages.error(request, 'No Data Found')
-        return render(request, 'app1/search.html', {'data': data})
+        validate_email(email)
+    except ValidationError:
+        errors.append("Please enter a valid email address.")
     else:
-        messages.success(request, 'Data Found')
-        return render(request, 'app1/search.html', {'data': data})
+        if User.objects.filter(email__iexact=email).exists():
+            errors.append("The email you entered already exists.")
+    if password != confirm_password:
+        errors.append("Passwords do not match.")
+    else:
+        try:
+            validate_password(password, User(username=username, email=email, first_name=first_name))
+        except ValidationError as exc:
+            errors.extend(exc.messages)
+
+    if errors:
+        for error in errors:
+            messages.error(request, error)
+        return render(request, "app1/registration.html", status=400)
+
+    with transaction.atomic():
+        user = User.objects.create_user(
+            username=username, email=email, password=password,
+            first_name=first_name, last_name=last_name,
+        )
+    sent = send_email_token(email, user.profile.email_token)
+    if sent:
+        messages.success(request, "Account created. Check your email for a verification link, then log in.")
+    else:
+        messages.warning(request, "Account created, but we couldn't send the verification email.")
+    return redirect("login")
+
+
+def verify(request, token):
+    from .models import Profile
+
+    profile = Profile.objects.filter(email_token=token).first()
+    if profile is None:
+        messages.error(request, "That verification link is invalid or has already been used.")
+        return redirect("login")
+    profile.is_verified = True
+    profile.save(update_fields=["is_verified"])
+    messages.success(request, "Account verified. You can now log in.")
+    return redirect("login")
+
+
+def user_login(request):
+    if request.method == "POST":
+        user = authenticate(
+            request,
+            username=(request.POST.get("username") or "").strip(),
+            password=request.POST.get("password") or "",
+        )
+        if user is not None:
+            login(request, user)
+            next_url = request.GET.get("next") or request.POST.get("next")
+            if next_url and url_has_allowed_host_and_scheme(next_url, {request.get_host()}, request.is_secure()):
+                return redirect(next_url)
+            return redirect("home")
+        messages.error(request, "Invalid username or password.")
+    return render(request, "app1/userlogin.html")
+
+
+def user_logout(request):
+    logout(request)
+    return redirect("login")
+
+
+@login_required
+def password_reset_settings(request):
+    if request.method == "POST":
+        user = request.user
+        old_password = request.POST.get("old_password") or ""
+        new_password = request.POST.get("new_password") or ""
+        retype = request.POST.get("retype_new_password") or ""
+
+        if not user.check_password(old_password):
+            messages.error(request, "Your current password is incorrect.")
+            return redirect("password_reset_settings")
+        if new_password != retype:
+            messages.error(request, "The new passwords do not match.")
+            return redirect("password_reset_settings")
+        try:
+            validate_password(new_password, user)
+        except ValidationError as exc:
+            for msg in exc.messages:
+                messages.error(request, msg)
+            return redirect("password_reset_settings")
+
+        user.set_password(new_password)
+        user.save()
+        update_session_auth_hash(request, user)  # stay logged in
+        messages.success(request, "Password updated.")
+        return redirect("userprofile")
+
+    return render(request, "app1/reset_password.html")
+
+
+# ---------- profile ----------
+
+@login_required
+def showprofile(request):
+    profile = request.user.profile
+    return render(request, "app1/profile.html", {
+        "field_of_interest_list": profile.fieldofinterest_set.all(),
+        "current_program_list": profile.program_set.order_by("-timestamp"),
+    })
+
+
+def _parse_profile_form(post, user):
+    """Validate the edit-profile form. Returns (cleaned_data, errors)."""
+    data, errors = {}, []
+
+    for field in ("first_name", "last_name", "highest_qualification", "nationality"):
+        value = (post.get(field) or "").strip()
+        if value:
+            data[field] = value
+
+    email = (post.get("email") or "").strip().lower()
+    if email:
+        try:
+            validate_email(email)
+        except ValidationError:
+            errors.append("Please enter a valid email address.")
+        else:
+            if User.objects.filter(email__iexact=email).exclude(pk=user.pk).exists():
+                errors.append("That email is already used by another account.")
+            else:
+                data["email"] = email
+
+    cgpa = (post.get("cgpa") or "").strip()
+    if cgpa:
+        try:
+            value = Decimal(cgpa)
+        except InvalidOperation:
+            errors.append("CGPA must be a number.")
+        else:
+            if not Decimal("0") <= value <= Decimal("4"):
+                errors.append("CGPA must be between 0 and 4.0.")
+            elif value.as_tuple().exponent < -2:
+                errors.append("CGPA can have at most 2 digits after the decimal point.")
+            else:
+                data["cgpa"] = value
+
+    age = (post.get("age") or "").strip()
+    if age:
+        if age.isdigit() and 10 <= int(age) <= 120:
+            data["age"] = int(age)
+        else:
+            errors.append("Please enter a valid age.")
+
+    dob = (post.get("dob") or "").strip()
+    if dob:
+        parsed = parse_date(dob)
+        if parsed is None or parsed >= date.today():
+            errors.append("Please enter a valid date of birth.")
+        else:
+            data["dob"] = parsed
+
+    return data, errors
+
+
+@login_required
+def showformdata(request):
+    """Edit profile. Always edits the logged-in user (the old version trusted a hidden email field)."""
+    if request.method != "POST":
+        return render(request, "app1/profile_edit.html")
+
+    user, profile = request.user, request.user.profile
+    data, errors = _parse_profile_form(request.POST, user)
+    if errors:
+        for error in errors:
+            messages.error(request, error)
+        return redirect("userprofileedit")
+
+    with transaction.atomic():
+        for field in ("first_name", "last_name", "email"):
+            if field in data:
+                setattr(user, field, data[field])
+        user.save()
+        for field in ("highest_qualification", "nationality", "cgpa", "age", "dob"):
+            if field in data:
+                setattr(profile, field, data[field])
+        if request.FILES.get("photo"):
+            profile.photo = request.FILES["photo"]
+        profile.save()
+
+    messages.success(request, "Profile updated.")
+    return redirect("userprofile")
+
+
+def _add_named_item(request, model, field, template):
+    if request.method == "POST":
+        name = (request.POST.get(field) or "").strip()
+        if not name:
+            messages.error(request, "Please enter a value.")
+            return redirect(request.path)
+        model.objects.get_or_create(name=name[:300], profile=request.user.profile)
+        return redirect("userprofile")
+    return render(request, template)
+
+
+@login_required
+def add_field_of_interest(request):
+    return _add_named_item(request, FieldOfInterest, "fieldOfInterest", "app1/field_of_interest_form.html")
+
+
+@login_required
+def add_current_program(request):
+    return _add_named_item(request, Program, "program", "app1/current_program.html")
+
+
+# ---------- recommendations ----------
+
+def _save_recommendations(history, matches):
+    with transaction.atomic():
+        Recommendation.objects.filter(history=history).delete()
+        Recommendation.objects.bulk_create([
+            Recommendation(history=history, scholarship_id=m.scholarship_id, rank=rank, score=m.score)
+            for rank, m in enumerate(matches, start=1)
+        ])
+
+
+@login_required
+def my_recommendations(request):
+    statement = (request.GET.get("statement") or "").strip()
+    context = {"personal_statement": statement, "scholarships": ""}
+
+    if not statement:
+        return render(request, "app1/recommendations.html", context)
+
+    if len(statement) < MIN_STATEMENT_LENGTH:
+        messages.info(request, f"Your statement should be at least {MIN_STATEMENT_LENGTH} characters.")
+        return render(request, "app1/recommendations.html", context)
+
+    profile = request.user.profile
+    history = History.objects.filter(profile=profile, personal_statement=statement).first()
+    is_new = history is None
+    if is_new:
+        history = History.objects.create(profile=profile, personal_statement=statement)
+
+    # Only recompute on a new statement or the first page, so paging through results is cheap.
+    if is_new or not request.GET.get("page"):
+        interests = list(profile.fieldofinterest_set.values_list("name", flat=True))
+        _save_recommendations(history, recommender.recommend(statement, extra_terms=interests))
+
+    ranked = history.top_scholarships
+    if not ranked.exists():
+        messages.info(request, "We couldn't find a good match. Try mentioning your subject, degree level and target country.")
+    else:
+        context["scholarships"] = paginate(request, ranked)
+    return render(request, "app1/recommendations.html", context)
+
+
+@login_required
+def my_history(request):
+    histories = request.user.profile.history_set.all()
+    return render(request, "app1/my_history.html", {"user_history": histories})
+
+
+# ---------- feedback ----------
+
+@login_required
+def feedback(request):
+    if request.method == "POST":
+        content = (request.POST.get("feedback") or "").strip()
+        if not content:
+            messages.error(request, "Please write a short message.")
+            return redirect("feedback")
+        Feedback.objects.create(
+            content=content[:500],
+            emoji=(request.POST.get("emoji") or "")[:100],
+            profile=request.user.profile,
+        )
+        messages.success(request, "Thanks for your feedback!")
+        return redirect("home")
+    return render(request, "app1/feedback.html")
