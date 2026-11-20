@@ -8,8 +8,12 @@ Registry of scholarship sources. To add one:
 """
 
 from .base import BaseScraper, DisallowedByRobots, ScrapedScholarship, ScraperError
+from .curated import CuratedOfficialScraper
 from .erasmus_mundus import ErasmusMundusCatalogueScraper, ErasmusMundusRSSScraper
 
-SCRAPERS = {cls.name: cls for cls in (ErasmusMundusRSSScraper, ErasmusMundusCatalogueScraper)}
+SCRAPERS = {
+    cls.name: cls
+    for cls in (CuratedOfficialScraper, ErasmusMundusRSSScraper, ErasmusMundusCatalogueScraper)
+}
 
 __all__ = ["SCRAPERS", "BaseScraper", "ScrapedScholarship", "ScraperError", "DisallowedByRobots"]
