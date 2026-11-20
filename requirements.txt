@@ -2,6 +2,7 @@ Django>=5.2,<6.0
 Pillow>=10.4
 numpy>=1.26
 scikit-learn>=1.5
+snowballstemmer>=2.2
 requests>=2.32
 beautifulsoup4>=4.12
 pypdf>=5.0
