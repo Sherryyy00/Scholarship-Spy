@@ -179,14 +179,6 @@
       margin-top: 30px;
       font-size: 12px;
     }
-
-    #imgbg::after {
-      display: none;
-    }
-
-    .inner_specific_div {
-      display: none;
-    }
   }
 
   @media (min-width: 991px) {
@@ -380,33 +372,10 @@
     width: 100%;
     object-fit: cover;
   }
-
-  #imgbg::after {
-    content: "";
-    width: 75%;
-    height: 200px;
-    background-color: rgb(255, 255, 255);
-    position: absolute;
-    right: -40px;
-    bottom: -120px;
-    transform: rotate(-14deg);
-    z-index: 1;
-  }
-
-  .inner_specific_div {
-    width: 75%;
-    height: 200px;
-    background-color: rgb(255, 255, 255);
-    position: absolute;
-    bottom: -120px;
-    left: -40px;
-    transform: rotate(14deg);
-  }
 </style>
 
 
 <section id="imgbg" class="d-flex justify-content-center align-items-center">
-  <div class="inner_specific_div"></div>
   <img src="{% static 'assets/img/spy-bg.jpg'%}" class="imgbg" alt="" id="image_bg">
   <div class="hero-shade"></div>
   <div class="container position-absolute" data-aos="zoom-in" data-aos-delay="100">
