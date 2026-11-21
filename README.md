@@ -176,7 +176,7 @@ To keep the data fresh, run `python manage.py scrape` once a day. Use cron on a 
 python manage.py test app1
 ```
 
-There are 189 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
+There are 197 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
 
 ## Configuration
 
