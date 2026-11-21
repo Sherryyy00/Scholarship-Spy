@@ -104,8 +104,10 @@ def search_dropdowns():
 
 # ---------- public pages ----------
 
-# Destinations shown on the home page: (display name, search term, photo)
+# Destinations the home page can show: (display name, search term, photo).
+# Only those with live scholarships are shown, busiest first.
 HOME_DESTINATIONS = [
+    ("Europe (Erasmus Mundus)", "Europe", "assets/img/countries/switz.jpeg"),
     ("United Kingdom", "United Kingdom", "assets/img/countries/london.jpeg"),
     ("Germany", "Germany", "assets/img/countries/germanyy.jpeg"),
     ("Canada", "Canada", "assets/img/countries/canada.jpeg"),
@@ -130,10 +132,11 @@ def index(request):
     context = search_dropdowns()
     context["all_feedbacks"] = Feedback.objects.filter(is_approved=True).select_related("profile__user")[:3]
     context["stats"] = site_stats()
-    context["destinations"] = [
+    destinations = [
         {"name": name, "query": query, "image": image, "count": live.filter(country__icontains=query).count()}
         for name, query, image in HOME_DESTINATIONS
     ]
+    context["destinations"] = sorted((d for d in destinations if d["count"]), key=lambda d: -d["count"])[:6]
     return render(request, "app1/index.html", context)
 
 
