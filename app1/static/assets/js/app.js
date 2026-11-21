@@ -32,6 +32,30 @@
       .finally(function () { button.disabled = false; });
   });
 
+  // Mobile menu: keep the button's label in sync, lock page scroll, close on link tap or Escape.
+  // (main.js toggles the menu itself.)
+  var navToggle = document.querySelector('.mobile-nav-toggle');
+  var navbar = document.getElementById('navbar');
+  if (navToggle && navbar) {
+    var sync = function () {
+      var open = navbar.classList.contains('navbar-mobile');
+      navToggle.setAttribute('aria-expanded', open);
+      navToggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      document.body.classList.toggle('nav-open', open);
+    };
+    navToggle.addEventListener('click', function () { setTimeout(sync, 0); });
+    var close = function () {
+      if (!navbar.classList.contains('navbar-mobile')) return;
+      navbar.classList.remove('navbar-mobile');
+      navToggle.classList.add('bi-list'); navToggle.classList.remove('bi-x');
+      sync();
+    };
+    navbar.addEventListener('click', function (e) {
+      if (e.target === navbar || e.target.closest('ul a')) close();  // backdrop or a link
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  }
+
   // Controls that submit their form as soon as they change (sort, "eligible only").
   document.querySelectorAll('.js-autosubmit').forEach(function (el) {
     el.addEventListener('change', function () { el.form.submit(); });

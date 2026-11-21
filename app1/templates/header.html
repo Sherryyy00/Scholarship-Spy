@@ -14,7 +14,7 @@
                 <li><a class="{% if 'recommendations' in path %}active{% endif %}" href="{% url 'my_recommendations' %}">Recommendations</a></li>
                 <li><a class="{% if 'about' in path %}active{% endif %}" href="{% url 'about' %}">About</a></li>
             </ul>
-            <i class="bi bi-list mobile-nav-toggle" aria-label="Open menu"></i>
+            <button type="button" class="bi bi-list mobile-nav-toggle" aria-label="Open menu" aria-controls="navbar" aria-expanded="false"></button>
         </nav>
 
         {% if user.is_authenticated %}
