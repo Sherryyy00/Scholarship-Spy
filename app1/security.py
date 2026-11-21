@@ -24,6 +24,19 @@ CSP = "; ".join([
 PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
 
 
+class HealthCheckMiddleware:
+    """Answer /healthz before host and HTTPS checks: the host's health checker and
+    uptime pingers may call it by internal address or plain HTTP."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.path == "/healthz":
+            return HttpResponse("ok", content_type="text/plain")
+        return self.get_response(request)
+
+
 class SecurityHeadersMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response

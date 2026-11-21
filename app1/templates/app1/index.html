@@ -657,7 +657,7 @@
             <i class="bx bxs-quote-alt-left quote-icon"></i>
             <p>{{ feedback.content }}</p>
             <div class="d-flex align-items-center mt-auto">
-              <img src="{{ feedback.profile.photo.url }}" alt="" class="quote-avatar">
+              <img src="{{ feedback.profile.avatar_url }}" alt="" class="quote-avatar">
               <div>
                 <strong>{{ feedback.profile.user.first_name|default:feedback.profile.user.username }} {{ feedback.profile.user.last_name }}</strong>
                 {% if feedback.profile.highest_qualification %}<small class="d-block text-muted">{{ feedback.profile.highest_qualification }}</small>{% endif %}

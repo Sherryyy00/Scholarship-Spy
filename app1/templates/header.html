@@ -21,7 +21,7 @@
         <div class="dropdown ms-3">
             <a class="btn rounded-pill dropdown-toggle p-1" href="#" role="button" id="dropdownMenuLink"
                 data-bs-toggle="dropdown" aria-expanded="false" style="box-shadow:none;" aria-label="Account menu">
-                <img src="{{ user.profile.photo.url }}" alt="" class="rounded-circle header-avatar">
+                <img src="{{ user.profile.avatar_url }}" alt="" class="rounded-circle header-avatar">
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink">
                 <li><h6 class="dropdown-header">Hi, {{ user.first_name|default:user.username }}</h6></li>

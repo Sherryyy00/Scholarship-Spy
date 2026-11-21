@@ -1,0 +1,45 @@
+# Render Blueprint: New > Blueprint > pick this repo. Render reads this file,
+# creates the web service and asks you for the values marked "sync: false".
+services:
+  - type: web
+    name: scholarship-spy
+    runtime: python
+    plan: free
+    region: frankfurt            # closest Render region to the UK
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: >-
+      python manage.py migrate --noinput &&
+      python manage.py createcachetable &&
+      python manage.py ensure_superuser &&
+      gunicorn project1.wsgi --workers 1 --threads 4 --timeout 120
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: SCHEDULER_AUTOSTART
+        value: "True"
+      - key: TRUSTED_PROXY_COUNT
+        value: "1"
+      - key: DJANGO_HSTS_SECONDS
+        value: "86400"
+      # Values you paste in when creating the service:
+      - key: DATABASE_URL           # Neon connection string
+        sync: false
+      - key: CLOUDINARY_URL         # cloudinary://key:secret@cloud-name
+        sync: false
+      - key: DJANGO_ADMIN_URL       # e.g. manage-x7k2/
+        sync: false
+      - key: DJANGO_SUPERUSER_USERNAME
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+      - key: EMAIL_HOST_USER        # your Gmail address
+        sync: false
+      - key: EMAIL_HOST_PASSWORD    # a Gmail app password
+        sync: false

@@ -5,7 +5,7 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings
 
 from app1 import jobs
-from app1.models import JobRun
+from app1.models import JobRun, Scholarship
 
 
 def at(hour, minute=0):
@@ -13,6 +13,13 @@ def at(hour, minute=0):
 
 
 class SchedulerTests(TestCase):
+    def setUp(self):
+        Scholarship.objects.create(title="Existing")
+
+    def test_empty_site_scrapes_straight_away(self):
+        Scholarship.all_objects.all().delete()
+        self.assertEqual([j.name for j in jobs.due_jobs(at(1))], ["daily_scrape"])
+
     def test_nothing_due_before_scheduled_time(self):
         self.assertEqual(jobs.due_jobs(at(1)), [])
 
