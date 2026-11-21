@@ -408,7 +408,13 @@
 <section id="imgbg" class="d-flex justify-content-center align-items-center">
   <div class="inner_specific_div"></div>
   <img src="{% static 'assets/img/spy-bg.jpg'%}" class="imgbg" alt="" id="image_bg">
+  <div class="hero-shade"></div>
   <div class="container position-absolute" data-aos="zoom-in" data-aos-delay="100">
+    <div class="hero-copy">
+      <h1>Find scholarships that fit you</h1>
+      <p>{{ stats.scholarships }} scholarships from official sources, ranked against your own statement or CV.</p>
+      <a href="{% url 'my_recommendations' %}" class="btn btn-accent">Get my matches</a>
+    </div>
     <!--- ===== SEARCH BAR ===== -->
 
     <form action="{% url 'search_results' %}" method="get" id="header-search-people" class="form-area"

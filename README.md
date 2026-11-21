@@ -1,30 +1,50 @@
 # Scholarship Spy
 
-![Tests](https://github.com/Sherryyy00/Scholarship-Spy/actions/workflows/tests.yml/badge.svg)
+**Find scholarships that fit you.** Scholarship Spy collects scholarships from official sources every day and ranks them against your own personal statement or CV.
 
-Scholarship Spy is a Django web app that helps students find scholarships. You can search by country, subject and degree, or paste your personal statement and get scholarships ranked by how well they match it.
+### [Live demo: scholarship-spy.onrender.com](https://scholarship-spy.onrender.com)
+
+![Tests](https://github.com/Sherryyy00/Scholarship-Spy/actions/workflows/tests.yml/badge.svg)
+![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.13-3776AB)
+![Django](https://img.shields.io/badge/Django-5.2-0C4B33)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-TF--IDF-F7931E)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1)
+
+<p align="center"><img src="docs/screenshots/home.jpg" alt="Scholarship Spy home page" width="90%"></p>
+
+## What I built
+
+This started as an older project of mine. I rebuilt it end to end as a production app:
+
+- **A recommender I can measure.** TF-IDF with abbreviation expansion ("AI", "CS"), stemming and typo tolerance. On 16 held-out test queries, the right scholarship comes first 94% of the time (MRR 0.80 → 0.94) and is always in the top 3. A test fails the build if quality drops.
+- **CV upload.** Users can upload a PDF or Word CV instead of writing a statement. The text is extracted in memory, contact details are stripped, and the file is never stored.
+- **Live data that updates itself.** Polite scrapers (robots.txt, rate limits) collect official programmes every night. Each job runs once a day even with several servers, and catches up if the site was asleep.
+- **Eligibility filtering.** Each match is checked against the user's nationality, degree level and grades, so people don't waste time on scholarships they can't apply for.
+- **Deadlines and an application tracker.** Users save scholarships to a board (Interested → Applied → Result) and get email reminders 14 and 3 days before a deadline.
+- **Security reviewed before launch.**
+  - a strict Content-Security-Policy, with no inline JavaScript
+  - rate limits that use the real visitor IP behind the host's proxy
+  - a password reset flow with one-time links
+  - `manage.py check --deploy`, `pip-audit` and `bandit` all clean
+- **Free hosting.** It runs on Render, Neon Postgres and Cloudinary for £0, with 198 automated tests running on GitHub Actions.
+
+## Screenshots
+
+| Recommendations, with the reason for each match | Application tracker |
+|---|---|
+| ![Recommendations](docs/screenshots/recommendations.jpg) | ![Tracker](docs/screenshots/tracker.jpg) |
+| **Browse and filter** | **Destinations from live data** |
+| ![Browse](docs/screenshots/browse.jpg) | ![Destinations](docs/screenshots/destinations.jpg) |
+
+<p align="center"><img src="docs/screenshots/mobile.jpg" alt="Mobile view" width="260"></p>
 
 ## Features
 
 - **Personalised recommendations.** Write a personal statement, **upload your CV (PDF, Word or text)**, or both. Results are ranked by relevance, with the words that explain each match. You can filter by degree level and destination, and your saved interests count too.
-
-  <p align="center"><img src="images/recommendation.jpeg" alt="Recommendations page" width="50%"></p>
-
 - **Search.** Filter by title, country, subject and degree, in any combination.
-
-  <p align="center"><img src="images/Search.jpeg" alt="Search page" width="50%"></p>
-
 - **Profile and history.** Keep your profile up to date and look back at past statements and what they matched.
-
-  <p align="center"><img src="images/Profile.jpeg" alt="Profile page" width="50%"></p>
-
-- **Feedback.** Users can leave feedback, and the latest feedback appears on the home page.
-
-  <p align="center"><img src="images/feedback.jpeg" alt="Feedback page" width="50%"></p>
-
-- **Admin panel.** Manage scholarships, users and recommendation history, with search and filters.
-
-  <p align="center"><img src="images/admin.jpeg" alt="Admin panel" width="50%"></p>
+- **Feedback.** Users can leave feedback. Approved feedback appears on the home page.
+- **Admin panel.** Manage scholarships, users, scrape runs and scheduled jobs, with search and filters.
 
 ## Deadlines and application tracker
 
@@ -176,7 +196,7 @@ To keep the data fresh, run `python manage.py scrape` once a day. Use cron on a 
 python manage.py test app1
 ```
 
-There are 197 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
+There are 198 tests covering recommender accuracy (statements and CVs), upload safety, login throttling, access control between users, scrapers and data ingestion, thumbnails, links, search, registration and email verification, profile security, and page rendering. GitHub Actions runs them on every push.
 
 ## Configuration
 

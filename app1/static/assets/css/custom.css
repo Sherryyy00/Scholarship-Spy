@@ -545,3 +545,21 @@ fieldset legend.form-label { font-size: 13px; }
 .el-reasons { margin: 0 0 8px; padding-left: 18px; font-size: 14px; color: var(--text-2); }
 .el-reasons li { margin-bottom: 4px; }
 @media (min-width: 992px) { .list-toolbar .sort-form { flex-wrap: nowrap; } }
+
+/* ---------- Home hero: headline over the photo ---------- */
+#imgbg .hero-shade { position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(20, 38, 52, .80) 0%, rgba(31, 58, 77, .55) 70%, rgba(31, 58, 77, .35) 100%); }
+#imgbg .inner_specific_div { z-index: 1; }
+#imgbg > .container { z-index: 2; }
+.hero-copy { text-align: center; color: #fff; margin: 0 auto 28px; max-width: 760px; }
+.hero-copy h1 { color: #fff; font-weight: 700; font-size: clamp(2rem, 4.2vw, 3.1rem); line-height: 1.15; margin-bottom: 12px; letter-spacing: -0.01em; }
+.hero-copy p { color: rgba(255, 255, 255, .88); font-size: clamp(1rem, 1.6vw, 1.2rem); margin-bottom: 20px; }
+.btn-accent { background: var(--accent); border: 0; color: #1F2933; font-weight: 600; border-radius: 999px; padding: 10px 26px; }
+.btn-accent:hover, .btn-accent:focus { background: #E5AA42; color: #1F2933; }
+@media (max-width: 767px) {
+  /* Let the hero grow with its content; the photo becomes a background layer. */
+  #imgbg { height: auto !important; min-height: 0; padding: 96px 0 36px; display: block !important; }
+  #imgbg #image_bg { position: absolute; inset: 0; height: 100%; }
+  #imgbg > .container { position: relative !important; }
+  .hero-copy { margin-bottom: 16px; padding: 0 8px; }
+}

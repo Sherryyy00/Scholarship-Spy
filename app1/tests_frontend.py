@@ -137,3 +137,15 @@ class ListingLayoutTests(TestCase):
     def test_category_pages_have_heading(self):
         r = self.client.get(reverse("category_degree", args=["Masters"]))
         self.assertContains(r, "Masters scholarships")
+
+
+class DestinationCardTests(TestCase):
+    def test_cards_follow_the_data(self):
+        from app1.models import Scholarship
+        for i in range(3):
+            Scholarship.objects.create(title=f"EM {i}", country="Europe")
+        Scholarship.objects.create(title="UK one", country="United Kingdom")
+        cards = self.client.get("/").context["destinations"]
+        self.assertEqual([c["name"] for c in cards], ["Europe (Erasmus Mundus)", "United Kingdom"])
+        self.assertEqual(cards[0]["count"], 3)
+        self.assertTrue(all(c["count"] for c in cards))
