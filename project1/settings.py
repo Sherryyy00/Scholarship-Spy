@@ -43,13 +43,20 @@ if not SECRET_KEY:
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
+# Render sets this to the service's own address (e.g. scholarship-spy.onrender.com).
+RENDER_HOST = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+if RENDER_HOST:
+    ALLOWED_HOSTS.append(RENDER_HOST)
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOST}")
+
 # Run the daily scrape and reminder emails automatically inside the web process
 # (see app1/jobs.py). On by default while developing; on a host you can keep it on
 # (jobs still run once a day) or switch it off and use `run_scheduler` / cron instead.
 SCHEDULER_AUTOSTART = env_bool("SCHEDULER_AUTOSTART", DEBUG)
 
 # Public base URL, used in emails (e.g. the account verification link).
-SITE_URL = os.environ.get("SITE_URL", "http://127.0.0.1:8000").rstrip("/")
+SITE_URL = os.environ.get(
+    "SITE_URL", f"https://{RENDER_HOST}" if RENDER_HOST else "http://127.0.0.1:8000").rstrip("/")
 
 
 INSTALLED_APPS = [
@@ -63,6 +70,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "app1.security.HealthCheckMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -97,7 +105,8 @@ TEMPLATES = [
 WSGI_APPLICATION = "project1.wsgi.application"
 
 
-# Database: SQLite by default, any database via DATABASE_URL-style settings.
+# Database: DATABASE_URL (e.g. Neon Postgres) if set, otherwise the DB_* settings,
+# otherwise a local SQLite file.
 DATABASES = {
     "default": {
         "ENGINE": os.environ.get("DB_ENGINE", "django.db.backends.sqlite3"),
@@ -108,6 +117,12 @@ DATABASES = {
         "PORT": os.environ.get("DB_PORT", ""),
     }
 }
+if os.environ.get("DATABASE_URL"):
+    import dj_database_url
+
+    # Neon sleeps when idle: reuse connections for a minute and check them before use.
+    DATABASES["default"] = dj_database_url.parse(
+        os.environ["DATABASE_URL"], conn_max_age=60, conn_health_checks=True)
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -133,6 +148,15 @@ WHITENOISE_AUTOREFRESH = DEBUG
 
 MEDIA_URL = "/mediafiles/"
 MEDIA_ROOT = BASE_DIR / "static" / "mediafiles"
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage" if not DEBUG
+                    else "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
+# Profile photos go to Cloudinary when it's configured (hosts like Render wipe local disk).
+if os.environ.get("CLOUDINARY_URL"):
+    STORAGES["default"] = {"BACKEND": "app1.storage.CloudinaryMediaStorage"}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

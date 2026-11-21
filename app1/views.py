@@ -17,7 +17,7 @@ from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Count, F, Q
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -1021,3 +1021,8 @@ class PasswordResetView(auth_views.PasswordResetView):
             extra_email_context=self.extra_email_context,
         )
         return redirect(self.get_success_url())
+
+
+def healthz(request):
+    """Tiny page for uptime pings (keeps a free host awake). No database query."""
+    return HttpResponse("ok", content_type="text/plain")
