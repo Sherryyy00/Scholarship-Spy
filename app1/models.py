@@ -23,6 +23,15 @@ class Profile(models.Model):
     cgpa = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
     nationality = models.CharField(max_length=100, blank=True, default="")
     photo = models.ImageField(default="default.jpg", upload_to="profile_pics")
+
+    @property
+    def avatar_url(self):
+        """The uploaded photo, or the built-in default avatar (served as a static file)."""
+        from django.templatetags.static import static
+
+        if not self.photo or self.photo.name == "default.jpg":
+            return static("assets/img/default-avatar.jpg")
+        return self.photo.url
     email_token = models.CharField(max_length=64, default=new_token, unique=True, editable=False)
     is_verified = models.BooleanField(default=False)
 

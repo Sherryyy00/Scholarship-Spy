@@ -191,23 +191,23 @@ Everything that differs between environments is set through environment variable
 | `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | SMTP credentials (for Gmail, use an App Password) |
 | `DB_ENGINE`, `DB_NAME`, ... | Optional, for PostgreSQL or another database |
 
-## Deploying
+## Deploying (free)
 
-The repo includes a `Procfile`: on release it runs migrations and creates the cache table, then starts gunicorn. Set these environment variables on the host:
+The site runs free on **Render** (web), **Neon** (Postgres) and **Cloudinary** (profile photos). `render.yaml` sets everything up: in Render choose **New > Blueprint**, pick this repo and paste in the values it asks for.
 
-| Variable | Example | Why |
-|---|---|---|
-| `DJANGO_SECRET_KEY` | 50+ random characters | Signs sessions and links |
-| `DJANGO_DEBUG` | `False` | Turns on all production protections |
-| `DJANGO_ALLOWED_HOSTS` | `scholarshipspy.onrender.com` | Only answer for your domain |
-| `DJANGO_CSRF_TRUSTED_ORIGINS` | `https://scholarshipspy.onrender.com` | Forms work over HTTPS |
-| `DB_ENGINE`, `DB_NAME`, `DB_USER`, ... | Postgres | Persistent data |
-| `SITE_URL` | `https://scholarshipspy.onrender.com` | Links in emails |
-| `TRUSTED_PROXY_COUNT` | `1` | Real visitor IPs for rate limits |
-| `DJANGO_ADMIN_URL` | `manage-x7k2/` | Hide the admin login |
-| `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | SMTP login | Verification, reset and reminder emails |
+| Variable | Where it comes from |
+|---|---|
+| `DATABASE_URL` | Neon dashboard > Connection string (keep `?sslmode=require`) |
+| `CLOUDINARY_URL` | Cloudinary dashboard > API environment variable |
+| `DJANGO_ADMIN_URL` | Any secret path ending in `/`, e.g. `manage-x7k2/` |
+| `DJANGO_SUPERUSER_USERNAME` / `_EMAIL` / `_PASSWORD` | Your admin login, created on first start |
+| `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | Gmail address and a Gmail app password |
 
-Daily jobs run inside the web process by default (see *Automatic daily jobs*). Start `DJANGO_HSTS_SECONDS` at one day and raise it to a year once HTTPS works.
+The secret key, HTTPS settings and the `onrender.com` address are set automatically. On every start the service runs migrations, creates the cache table and the admin account (once), then starts gunicorn. A brand-new site scrapes scholarships straight away rather than waiting until 03:00.
+
+Render's free plan sleeps after 15 minutes without visitors. A free uptime pinger (e.g. cron-job.org) calling `https://<your-site>/healthz` every 10 minutes keeps it awake, so pages load instantly and the daily jobs run on time.
+
+For a custom domain, add it under the service's **Settings > Custom Domains**, then add it to `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS` (with `https://`) and `SITE_URL`.
 
 ## Future work
 

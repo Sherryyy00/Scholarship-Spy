@@ -57,10 +57,15 @@ def due_jobs(now=None):
     """Jobs whose time has come today and that haven't been claimed today."""
     from .models import JobRun
 
+    from .models import Scholarship
+
     now = now or timezone.now()
     today = now.date()
     done = set(JobRun.objects.filter(run_date=today).values_list("job", flat=True))
-    return [j for j in JOBS if now.time() >= j.at and j.name not in done]
+    # A brand-new site has no scholarships yet: scrape straight away instead of waiting for 03:00.
+    empty = not Scholarship.all_objects.exists()
+    return [j for j in JOBS
+            if j.name not in done and (now.time() >= j.at or (empty and j.name == "daily_scrape"))]
 
 
 def claim(job, run_date):

@@ -4,6 +4,7 @@ from django.urls import path
 from app1 import views
 
 urlpatterns = [
+    path("healthz", views.healthz, name="healthz"),
     # Forgotten password
     path("password/forgot/", views.PasswordResetView.as_view(), name="password_reset"),
     path("password/forgot/sent/", auth_views.PasswordResetDoneView.as_view(
